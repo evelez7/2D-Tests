@@ -61,32 +61,21 @@ vector<array<double, DIM>> compute_points_to_consider(const array<double, DIM> &
   return points_to_consider;
 }
 
-double interpolate(const double& q_k, const array<double, DIM> x_k, const array<double, DIM> x_0, const double& h_g, const int& choice)
+double interpolate(const double& q_k, const array<double, DIM> x_k, const double& h_g, const int& choice)
 {
-  // cout << "x_k " << x_k[0] << " , " << x_k[1] << endl;
   array<double, DIM> left_hand_corner = { floor(x_k[0] / h_g), floor(x_k[1] / h_g) };
-  // array<double, DIM> left_hand_corner = { floor(x_0[0] / h_g), floor(x_0[1] / h_g) };
-  cout << endl << "NEW INTERPOLATION " << endl;
-  cout << "lhc: " << left_hand_corner[0] << " , " << left_hand_corner[1] << endl;
   auto points_to_consider = compute_points_to_consider(left_hand_corner, choice);
-  double sum = 0;
+  double sum = 0.;
   for (auto current_point : points_to_consider)
   {
 
     array<double, DIM> scaled_point = { current_point[0] * h_g, current_point[1] * h_g };
-    // array<double, DIM> scaled_point = { point[0] , point[1] };
 
     array<double, DIM> z = { scaled_point[0] - x_k[0], scaled_point[1] - x_k[1] };
     // array<double, DIM> z = { x_k[0] - scaled_point[0], x_k[1] - scaled_point[1] };
+
     double w_result = w(z, h_g, choice);
     sum += q_k * w_result;
-    cout << "point: " << current_point[0] << " , " << current_point[1];
-    cout << "scaled point: " << scaled_point[0] << " , " << scaled_point[1] << endl;
-    cout << "z: " << z[0] << " , " << z[1] << endl;
-    cout << "w: " << w_result << endl;
-    cout << "q_k = " << q_k << endl;
-    cout << "w_result = " << w_result << endl;
   }
-  cout << "sum = " << sum << endl;
   return sum;
 }

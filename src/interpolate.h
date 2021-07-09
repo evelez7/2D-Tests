@@ -11,7 +11,7 @@ using namespace std;
 
 // array<double, DIM> interpolate(const array<double, DIM>&, const array<double, DIM>&, const array<double, DIM>, const double&, const int&);
 
-double interpolate(const double&, const array<double, DIM>, const array<double, DIM>, const double&, const int&);
+double interpolate(const double&, const array<double, DIM>, const double&, const int&);
 
 
 #endif

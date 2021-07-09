@@ -2,7 +2,7 @@
 #include <exception>
 #include "velocities.h"
 
-double r0=1;
+double r0=0.2;
 
 /**
  * @brief calculate angular velocity formula
@@ -14,12 +14,12 @@ double r0=1;
 double find_velocity(const double& r, const int& p)
 {
   if (r <= r0)
-    return (1 - pow(1 - pow(r/r0, 2.), p+1))/(2 * (p+1) * pow(r/r0, 2.));
+    return static_cast<double>((1. - pow(1. - static_cast<double>(pow(r/r0, 2.)), p+1)))/(2. * (p+1) * static_cast<double>(pow(r/r0, 2.)));
   else if (r >= r0)
-    return 1/(2 * (p+1) * pow(r/r0, 2.));
-    // return 1;
+    return 1./(2. * static_cast<double>(p+1.) * static_cast<double>(pow(r/r0, 2.)));
 }
 
+// TODO
 double find_velocity_derivative(const double& radius, const int& p)
 {
 

@@ -6,12 +6,12 @@ using namespace std;
 
 double w_2(double x)
 {
-  auto abs_x = abs(x);
-  if (abs_x >= 0 && abs_x <= 1)
+  double abs_x = abs(x);
+  if (abs_x >= 0. && abs_x <= 1.)
   {
-    return 1 - abs_x;
+    return 1. - abs_x;
   }
-  return 0;
+  return 0.;
 }
 
 double w_3(double x)
@@ -68,7 +68,7 @@ double w_6(double x)
 
 double w_helper(array<double, DIM> z, const double& h_g, double (*w)(double))
 {
-  double product = 1;
+  double product = 1.;
   for (int i=0; i<DIM; ++i)
   {
     product *= (1./h_g)*w(z[i]/h_g);
@@ -95,7 +95,6 @@ w_ptr get_w(const int& choice)
 
 double w(array<double, DIM> z, double h_g, int choice)
 {
-  double result = 0;
   switch (choice)
   {
     case 2:

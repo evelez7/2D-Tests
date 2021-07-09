@@ -47,11 +47,10 @@ matrix rotation(const array<double, DIM>&, const int &, const int &);
 
 array<double, DIM> partial_derivative_x(const Point &, const double &, const int &, const int &);
 
-array<double, DIM> init_point(const Point &j, const double &h_p, const double &time, const int &p)
+array<double, DIM> init_point(const Point& j, const double &h_p, const double &time, const int &p)
 {
-  array<double, DIM> j_array { static_cast<double>(j[0]) * h_p, static_cast<double>(j[1]) * h_p };
-  auto rotation_result = multiply_matrix_by_vector(rotation(j_array, time, p), j_array);
-  return rotation_result;
+  array<double, DIM> j_scaled {{ j[0] * h_p, j[1] * h_p }};
+  return multiply_matrix_by_vector(rotation(j_scaled, time, p), j_scaled);
 }
 
 inline void write_point_mesh(const char *filename, int npts, double *pts,
@@ -146,26 +145,16 @@ void print_array(const array<double, DIM>& to_print)
 int main(int argc, char **argv)
 {
   int p;
-  // int M;
   int range;
 
-  // cout << "Enter log_2(N): ";
   cout << "range: ";
   cin >> range;
 
-  // cin >> M;
-  // int N = static_cast<int>(pow(2, M));
-
-
-  // double h_p = 1./static_cast<double>(N); // interparticle spacing
-  double h_p = 1./static_cast<double>(range);
-  // double h_g = 1./static_cast<double>(N);
-  double h_g = h_p;
-  // double h_p = 1./(1./(h_g/1.));
+  double h_p = 1./static_cast<double>(range); // interparticle spacing
+  double h_g = h_p*2.;
 
   cout << "Enter p: ";
   cin >> p;
-  // array<double, DIM> center = { static_cast<double>(N)/2., static_cast<double>(N)/2. };
   array<double, DIM> center = { static_cast<double>(range)/2., static_cast<double>(range)/2. };
 
   int time;
@@ -176,54 +165,34 @@ int main(int argc, char **argv)
   cout << "Enter spline interpolant: ";
   cin >> spline_choice;
 
-  // cout << "N = " << N << endl;
-  cout << "particles per cell = " << h_g*h_g/h_p/h_p << endl;
-
-  // Point corner(Point::Unit()[0] * N, Point::Unit()[1] * N);
   Point corner(Point::Unit()[0] * range, Point::Unit()[1] * range);
 
   Box grid_box(Point::Zeros(), corner); // coordinates from (0,0) to (p, p)
   BoxData<double> grid(grid_box);
-  // array<array<double, DIM>, DIM> grid
   vector<Particle> particles;
 
   for (auto it = grid.box().begin(); it != grid.box().end(); ++it)
   {
     Point current_grid_point = *it;
-    // cout << "current point: " << current_grid_point[0] << " , " << current_grid_point[1] << endl;
     double x_component_grid = static_cast<double>(current_grid_point[0]) - center[0];
     double y_component_grid = static_cast<double>(current_grid_point[1]) - center[1];
 
+
+    // particle locations are based on the grid points scaled by grid spacing
+    array<double, DIM> alpha_k { x_component_grid * h_g, y_component_grid * h_g };
     array<double, DIM> x_k = init_point(current_grid_point, h_p, time, p);
-
-    // particle locations are based on the grid points scaled by particle spacing
-    array<double, DIM> alpha_k { x_component_grid * h_p, y_component_grid * h_p };
-
-    double f_k =  pow(h_p, 2.);
-    // double f_k = 1.;
     auto projection = lagrangian_map(alpha_k, time, p);
-    // print_array(projection);
+    double f_k =  pow(h_p, 2.);
 
     // these are returned as row vectors, but they make up the columns of the deformation matrix
     auto partial_x_x = partial_derivative_x(current_grid_point, time, 0, p);
     auto partial_x_y = partial_derivative_x(current_grid_point, time, 1, p);
     double strength = pow(h_p, 2.);
 
-    // cout << "new point" << endl;
-    // cout << "projection: " << endl;
-    // print_array(projection);
-    // cout << endl << "alpha_k" << endl;
-    // print_array(alpha_k);
-    // cout << endl << "x_k" << endl;
-    // print_array(x_k);
-    // cout << endl;
-    // displaced particles from their original positions
-
-    double interpolated_value = 0;
-    if ( (projection[0] <= 0.25 && projection[0] >= -0.25) && (projection[1] <= 0.25 && projection[1] >= -0.25) )
+    double interpolated_value = 0.;
+    if ((projection[0] <= 0.3 && projection[0] >= -0.3) && (projection[1] <= 0.3 && projection[1] >= -0.3))
     {
-      interpolated_value = interpolate(f_k, x_k, alpha_k, h_g, spline_choice);
-      // cout << "interpolated_value = " << interpolated_value << endl;
+      interpolated_value = interpolate(f_k, x_k, h_g, spline_choice);
     }
     Particle new_part = { projection[0], projection[1], strength, interpolated_value };
     particles.push_back(new_part);
@@ -273,6 +242,8 @@ matrix rotation(const Point &alpha, const int &time, const int &p)
 
   return rotation_matrix;
 }
+
+// matrix partial_derivative_velocity(const double&
 
 /**
  * @brief The partial derivative of the rotation matrix with respect to the Lagrangian coordinate
