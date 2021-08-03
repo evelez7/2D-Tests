@@ -110,8 +110,8 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
     vars[3][i] = current_part.velocity;
     x[i * 3] = current_part.x;
     x[i * 3 + 1] = current_part.y;
-    // x[i * 3] = i+1;
-    // x[i * 3 + 1] = i+2;
+    x[i * 3] = i+1;
+    x[i * 3 + 1] = i+2;
     x[i * 3 + 2] = 0.;
     // cout << "x: " << current_part.x << " y: " << current_part.y << endl;
   }
@@ -131,7 +131,6 @@ void PWrite(vector<Particle> particles)
   static char nameBuffer[10];
   sprintf(nameBuffer, "PART.%d", fileCount);
   PWrite(nameBuffer, particles, fileCount);
-  fileCount++;
 }
 
 void print_array(const array<double, DIM>& to_print)
@@ -203,10 +202,10 @@ int main(int argc, char **argv)
   Box grid_box(bottom_left, top_right);
   BoxData<double> grid(grid_box);
 
-  double hp = 1.; // interparticle spacing
-  double hg = 1.;
-  // double hp = 1./static_cast<double>(np); // interparticle spacing
-  // double hg = hp*2.;
+  // double hp = 1.; // interparticle spacing
+  // double hg = 1.;
+  double hp = 1./static_cast<double>(np); // interparticle spacing
+  double hg = hp;
   cout << "Particles per cell: " << hg*hg/hp/hp << endl;
 
   auto particles = initialize_particles(hp, np);
@@ -215,12 +214,6 @@ int main(int argc, char **argv)
 
   for (int i=0; i<rotated_particles.size(); ++i)
   {
-    if (isnan(rotated_particles[i].x) || isnan(rotated_particles[i].y))
-    {
-      cout << endl << "IS NAN" << endl;
-      cout << "coords: " << rotated_particles[i].x << "," << rotated_particles[i].y << endl;
-      cout << "i: " << i << endl;
-    }
     array<double, DIM> x_k {rotated_particles[i].x, rotated_particles[i].y};
     interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
   }

@@ -8,6 +8,8 @@ std::map<double (*)(double), std::tuple<int, int>> r_map = {
     {w_4, std::make_tuple(-1, 2)},
     {w_6, std::make_tuple(-2, 3)}};
 
+const double limit = 0.7;
+
 bool point_is_present_in_vector(const array<double, DIM>& point_to_find,
                                 const vector<array<double, DIM>>& vec) {
   if (find(vec.begin(), vec.end(), point_to_find) != vec.end()) {
@@ -86,7 +88,6 @@ void interpolate(BoxData<double>& grid, const double& q_k, const array<double, D
 {
   array<double, DIM> left_hand_corner = { floor(x_k[0] / hg), floor(x_k[1] / hg) };
   auto points_to_consider = compute_points_to_consider(left_hand_corner, choice);
-  double sum = 0.;
   for (auto current_point : points_to_consider)
   {
     array<double, DIM> x_bar = { current_point[0] * hg, current_point[1] * hg };
@@ -95,15 +96,13 @@ void interpolate(BoxData<double>& grid, const double& q_k, const array<double, D
     // array<double, DIM> z = { x_k[0] - x_bar[0], x_k[1] - x_bar[1] };
 
     double w_result = w(z, hg, choice);
-    sum += q_k * w_result;
-    Point to_store { current_point[0], current_point[1] };
+    Point to_store { static_cast<int>(current_point[0]), static_cast<int>(current_point[1]) };
 
     array<double, DIM> scaled_grid_point { current_point[0] * hg, current_point[1] * hg };
-    Point to_store_point { static_cast<int>(current_point[0]), static_cast<int>(current_point[1]) };
-    if (grid.box().contains(to_store_point))
+    if (grid.box().contains(to_store))
     {
-      if ((scaled_grid_point[0] <= 0.5 && scaled_grid_point[0] >= -0.5) && (scaled_grid_point[1] <= 0.5 && scaled_grid_point[1] >= -0.5))
-        grid(to_store) += sum;
+      if ((scaled_grid_point[0] <= limit && scaled_grid_point[0] >= -limit) && (scaled_grid_point[1] <= limit && scaled_grid_point[1] >= -limit))
+        grid(to_store) += q_k * w_result;
     }
   }
 }
