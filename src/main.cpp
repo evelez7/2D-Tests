@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <memory>
 #include "matrix.h"
 #include "w.h"
 #include "velocities.h"
@@ -25,25 +26,24 @@ struct Particle
   double y;
   double strength;
   double velocity;
+  Particle(double x, double y, double strength, double velocity)
+        : x(x)
+        , y(y)
+        , strength(strength)
+        , velocity(velocity)
+    {}
 };
-/**
- * @brief Get projection for a Lagrangian coordinate alpha
- *
- * @return matrix the rotation matrix multiplied by the Lagrangian coordinate
- */
-array<double, DIM>
-lagrangian_map(const Point &, const int &, const int &);
 
-array<double, DIM> lagrangian_map(const array<double, DIM>&, const int&, const int&);
+array<double, DIM> lagrangian_map(const array<double, DIM>&, const double&, const int&);
 
 /**
  * @brief Get the rotation for a specific coordinate at time t
  *
  * @return matrix
  */
-matrix rotation(const Point &, const int &, const int &);
+matrix rotation(const Point &, const double &, const int &);
 
-matrix rotation(const array<double, DIM>&, const int &, const int &);
+matrix rotation(const array<double, DIM>&, const double &, const int &);
 
 array<double, DIM> partial_derivative_x(const Point &, const double &, const int &, const int &);
 
@@ -142,22 +142,54 @@ void print_array(const array<double, DIM>& to_print)
   cout << "}" << endl;
 }
 
+// initialize particles spaced by h_p
+vector<Particle> initialize_particles(const double& hp, const int& np)
+{
+  array<double, DIM> new_coords;
+  vector<Particle> particles;
+  for (int i=-np/2; i<np/2; ++i)
+  {
+    new_coords[0] = i*hp;
+    for (int j=-np/2; j<np/2; ++j)
+    {
+      new_coords[1] = j*hp;
+      Particle new_part { new_coords[0], new_coords[1], pow(hp, 2.), 0. };
+      particles.push_back(new_part);
+    }
+  }
+  return particles;
+}
+
+vector<Particle> move_particles(vector<Particle> particles, const double& time, const int& p)
+{
+  vector<Particle> rotated_particles;
+  for (int i=0; i<particles.size(); ++i)
+  {
+    array<double, DIM> part_coords { particles[i].x, particles[i].y };
+    if (part_coords[0] == 0 && part_coords[1] == 0)
+    {
+      rotated_particles.emplace_back(0., 0., particles[i].strength, particles[i].velocity);
+      continue;
+    }
+    auto projection = lagrangian_map(part_coords, time, p);
+    rotated_particles.emplace_back(projection[0], projection[1], particles[i].strength, particles[i].velocity);
+  }
+  return rotated_particles;
+}
+
 int main(int argc, char **argv)
 {
-  int p;
-  int range;
+  int p, log_n, np;
 
-  cout << "range: ";
-  cin >> range;
-
-  double h_p = 1./static_cast<double>(range); // interparticle spacing
-  double h_g = h_p*2.;
+  cout << "number of particles (log_2): ";
+  cin >> log_n;
+  np = static_cast<int>(pow(2, log_n));
 
   cout << "Enter p: ";
   cin >> p;
-  array<double, DIM> center = { static_cast<double>(range)/2., static_cast<double>(range)/2. };
+  // array<double, DIM> center = { static_cast<double>(range)/2., static_cast<double>(range)/2. };
 
-  int time;
+  double time;
   cout << "Enter time: ";
   cin >> time;
 
@@ -165,80 +197,67 @@ int main(int argc, char **argv)
   cout << "Enter spline interpolant: ";
   cin >> spline_choice;
 
-  Point corner(Point::Unit()[0] * range, Point::Unit()[1] * range);
-
-  Box grid_box(Point::Zeros(), corner); // coordinates from (0,0) to (p, p)
+  // Box grid_box(Point::Zeros(), Point::Unit()*np); // coordinates from (0,0) to (p, p)
+  Point bottom_left(-np/2, -np/2);
+  Point top_right(np/2, np/2);
+  Box grid_box(bottom_left, top_right);
   BoxData<double> grid(grid_box);
-  vector<Particle> particles;
 
-  for (auto it = grid.box().begin(); it != grid.box().end(); ++it)
+  double hp = 1.; // interparticle spacing
+  double hg = 1.;
+  // double hp = 1./static_cast<double>(np); // interparticle spacing
+  // double hg = hp*2.;
+  cout << "Particles per cell: " << hg*hg/hp/hp << endl;
+
+  auto particles = initialize_particles(hp, np);
+  // vector<Particle> particles = initialize_particles(grid.box(), hp, np);
+  vector<Particle> rotated_particles = move_particles(particles, time, p);
+
+  for (int i=0; i<rotated_particles.size(); ++i)
   {
-    Point current_grid_point = *it;
-    double x_component_grid = static_cast<double>(current_grid_point[0]) - center[0];
-    double y_component_grid = static_cast<double>(current_grid_point[1]) - center[1];
-
-
-    // particle locations are based on the grid points scaled by grid spacing
-    array<double, DIM> alpha_k { x_component_grid * h_g, y_component_grid * h_g };
-    array<double, DIM> x_k = init_point(current_grid_point, h_p, time, p);
-    auto projection = lagrangian_map(alpha_k, time, p);
-    double f_k =  pow(h_p, 2.);
-
-    // these are returned as row vectors, but they make up the columns of the deformation matrix
-    auto partial_x_x = partial_derivative_x(current_grid_point, time, 0, p);
-    auto partial_x_y = partial_derivative_x(current_grid_point, time, 1, p);
-    double strength = pow(h_p, 2.);
-
-    double interpolated_value = 0.;
-    if ((projection[0] <= 0.3 && projection[0] >= -0.3) && (projection[1] <= 0.3 && projection[1] >= -0.3))
+    if (isnan(rotated_particles[i].x) || isnan(rotated_particles[i].y))
     {
-      interpolated_value = interpolate(f_k, x_k, h_g, spline_choice);
+      cout << endl << "IS NAN" << endl;
+      cout << "coords: " << rotated_particles[i].x << "," << rotated_particles[i].y << endl;
+      cout << "i: " << i << endl;
     }
-    Particle new_part = { projection[0], projection[1], strength, interpolated_value };
-    particles.push_back(new_part);
-    grid(current_grid_point) = interpolated_value;
+    array<double, DIM> x_k {rotated_particles[i].x, rotated_particles[i].y};
+    interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
   }
   string filename = "grid";
-  WriteData(grid, 0, h_p, filename, filename);
-  PWrite(particles);
+  WriteData(grid, 0, hp, filename, filename);
+  PWrite(rotated_particles);
 
   return 0;
 }
 
-array<double, DIM> lagrangian_map(const array<double, DIM>& alpha, const int& time, const int& p)
+array<double, DIM> lagrangian_map(const array<double, DIM>& alpha, const double& time, const int& p)
 {
   return multiply_matrix_by_vector(rotation(alpha, time, p), alpha);
 }
 
-array<double, DIM> lagrangian_map(const Point &alpha, const int &time, const int &p)
-{
-  array<double, DIM> alpha_array = {static_cast<double>(alpha[0]), static_cast<double>(alpha[1])};
-  return multiply_matrix_by_vector(rotation(alpha, time, p), alpha_array);
-}
-
-matrix rotation(const array<double, DIM> &alpha, const int &time, const int &p)
+matrix rotation(const array<double, DIM> &alpha, const double&time, const int &p)
 {
   double velocity = find_velocity(find_magnitude(alpha), p);
-  // double velocity = 1.;
   // cout << "velocity: " << velocity << endl;
   matrix rotation_matrix;
-  rotation_matrix[0][0] = cos(velocity * static_cast<double>(time));
-  rotation_matrix[0][1] = sin(velocity * static_cast<double>(time));
-  rotation_matrix[1][0] = -sin(velocity * static_cast<double>(time));
-  rotation_matrix[1][1] = cos(velocity * static_cast<double>(time));
+  rotation_matrix[0][0] = cos(velocity * static_cast<double>(time) );
+  rotation_matrix[0][1] = sin(velocity * static_cast<double>(time) );
+  rotation_matrix[1][0] = -sin(velocity * static_cast<double>(time) );
+  rotation_matrix[1][1] = cos(velocity * static_cast<double>(time) );
 
   return rotation_matrix;
 }
 
-matrix rotation(const Point &alpha, const int &time, const int &p)
+matrix rotation(const Point &alpha, const double&time, const int &p)
 {
   array<double, DIM> alpha_array { static_cast<double>(alpha[0]), static_cast<double>(alpha[1]) };
   double velocity = find_velocity(find_magnitude(alpha_array), p);
   matrix rotation_matrix;
-  rotation_matrix[0][0] = cos(velocity * static_cast<double>(time));
-  rotation_matrix[0][1] = sin(velocity * static_cast<double>(time));
-  rotation_matrix[1][0] = -sin(velocity * static_cast<double>(time));
-  rotation_matrix[1][1] = cos(velocity * static_cast<double>(time));
+  rotation_matrix[0][0] = cos(velocity * static_cast<double>(time) );
+  rotation_matrix[0][1] = sin(velocity * static_cast<double>(time) );
+  rotation_matrix[1][0] = -sin(velocity * static_cast<double>(time) );
+  rotation_matrix[1][1] = cos(velocity * static_cast<double>(time) );
 
   return rotation_matrix;
 }

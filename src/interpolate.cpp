@@ -1,3 +1,4 @@
+#include "Proto_BoxData.H"
 #include "interpolate.h"
 #include "w.h"
 
@@ -68,14 +69,41 @@ double interpolate(const double& q_k, const array<double, DIM> x_k, const double
   double sum = 0.;
   for (auto current_point : points_to_consider)
   {
+    array<double, DIM> x_bar = { current_point[0] * h_g, current_point[1] * h_g };
 
-    array<double, DIM> scaled_point = { current_point[0] * h_g, current_point[1] * h_g };
-
-    array<double, DIM> z = { scaled_point[0] - x_k[0], scaled_point[1] - x_k[1] };
-    // array<double, DIM> z = { x_k[0] - scaled_point[0], x_k[1] - scaled_point[1] };
+    array<double, DIM> z = { x_bar[0] - x_k[0], x_bar[1] - x_k[1] };
+    // array<double, DIM> z = { x_k[0] - x_bar[0], x_k[1] - x_bar[1] };
 
     double w_result = w(z, h_g, choice);
+    // cout << "w_result: " << w_result << endl;
     sum += q_k * w_result;
   }
+  // cout << "sum: " << sum << endl;
   return sum;
+}
+
+void interpolate(BoxData<double>& grid, const double& q_k, const array<double, DIM> x_k, const double& hg, const double& hp, const int& choice)
+{
+  array<double, DIM> left_hand_corner = { floor(x_k[0] / hg), floor(x_k[1] / hg) };
+  auto points_to_consider = compute_points_to_consider(left_hand_corner, choice);
+  double sum = 0.;
+  for (auto current_point : points_to_consider)
+  {
+    array<double, DIM> x_bar = { current_point[0] * hg, current_point[1] * hg };
+
+    array<double, DIM> z = { x_bar[0] - x_k[0], x_bar[1] - x_k[1] };
+    // array<double, DIM> z = { x_k[0] - x_bar[0], x_k[1] - x_bar[1] };
+
+    double w_result = w(z, hg, choice);
+    sum += q_k * w_result;
+    Point to_store { current_point[0], current_point[1] };
+
+    array<double, DIM> scaled_grid_point { current_point[0] * hg, current_point[1] * hg };
+    Point to_store_point { static_cast<int>(current_point[0]), static_cast<int>(current_point[1]) };
+    if (grid.box().contains(to_store_point))
+    {
+      if ((scaled_grid_point[0] <= 0.5 && scaled_grid_point[0] >= -0.5) && (scaled_grid_point[1] <= 0.5 && scaled_grid_point[1] >= -0.5))
+        grid(to_store) += sum;
+    }
+  }
 }

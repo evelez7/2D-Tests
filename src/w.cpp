@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 #include "w.h"
 
@@ -68,11 +69,13 @@ double w_6(double x)
 
 double w_helper(array<double, DIM> z, const double& h_g, double (*w)(double))
 {
+  // cout << "z in helper: " << z[0] << "," << z[1] << endl;
   double product = 1.;
   for (int i=0; i<DIM; ++i)
   {
     product *= (1./h_g)*w(z[i]/h_g);
   }
+  // cout << "product in helper: " << product << endl;
   return product;
 }
 
