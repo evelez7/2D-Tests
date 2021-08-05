@@ -110,9 +110,6 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
     vars[3][i] = current_part.velocity;
     x[i * 3] = current_part.x;
     x[i * 3 + 1] = current_part.y;
-    x[i * 3] = i+1;
-    x[i * 3 + 1] = i+2;
-    x[i * 3 + 2] = 0.;
     // cout << "x: " << current_part.x << " y: " << current_part.y << endl;
   }
   double *varPtr[4];
