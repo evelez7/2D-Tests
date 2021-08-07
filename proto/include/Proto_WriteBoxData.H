@@ -85,7 +85,7 @@ inline void WriteData(BoxData<double,n> &    a_state,
   double origin[DIM];
   for (int ii = 0; ii < DIM; ii++)
   {
-    origin[ii] = 0.;
+    origin[ii] = a_state.box().low()[ii]*a_dx;
   }
 
   char basename[1024];

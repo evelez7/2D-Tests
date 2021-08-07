@@ -110,6 +110,7 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
     vars[3][i] = current_part.velocity;
     x[i * 3] = current_part.x;
     x[i * 3 + 1] = current_part.y;
+    x[i * 3 + 2] = 0.;
     // cout << "x: " << current_part.x << " y: " << current_part.y << endl;
   }
   double *varPtr[4];
@@ -175,11 +176,11 @@ vector<Particle> move_particles(vector<Particle> particles, const double& time, 
 
 int main(int argc, char **argv)
 {
-  int p, log_n, np;
+  int p, log_n, np,ng;
 
-  cout << "number of particles (log_2): ";
+  cout << "number of grid points (log_2): ";
   cin >> log_n;
-  np = static_cast<int>(pow(2, log_n));
+  ng = static_cast<int>(pow(2, log_n));
 
   cout << "Enter p: ";
   cin >> p;
@@ -188,21 +189,24 @@ int main(int argc, char **argv)
   double time;
   cout << "Enter time: ";
   cin >> time;
-
+  time *= M_PI;
   int spline_choice;
   cout << "Enter spline interpolant: ";
   cin >> spline_choice;
-
+  int ppercell;
+  cout << "enter number of particles per cell" << endl;
+  cin >> ppercell;
   // Box grid_box(Point::Zeros(), Point::Unit()*np); // coordinates from (0,0) to (p, p)
-  Point bottom_left(-np/2, -np/2);
-  Point top_right(np/2, np/2);
+  np=ng*ppercell;
+  Point bottom_left(-ng, -ng);
+  Point top_right(ng, ng);
   Box grid_box(bottom_left, top_right);
   BoxData<double> grid(grid_box);
 
   // double hp = 1.; // interparticle spacing
   // double hg = 1.;
-  double hp = 1./static_cast<double>(np); // interparticle spacing
-  double hg = hp;
+  double hg = 1./static_cast<double>(ng); // interparticle spacing
+  double hp = hg/ppercell;
   cout << "Particles per cell: " << hg*hg/hp/hp << endl;
 
   auto particles = initialize_particles(hp, np);
@@ -215,7 +219,7 @@ int main(int argc, char **argv)
     interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
   }
   string filename = "grid";
-  WriteData(grid, 0, hp, filename, filename);
+  WriteData(grid, 0, hg, filename, filename);
   PWrite(rotated_particles);
 
   return 0;
