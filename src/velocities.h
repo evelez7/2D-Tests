@@ -7,6 +7,8 @@
 using namespace std;
 using namespace Proto;
 
+void initialize_r0(const double&);
+
 double find_magnitude(const Point&);
 
 double find_magnitude(const array<double, DIM>&);

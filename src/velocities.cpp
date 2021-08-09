@@ -2,7 +2,12 @@
 #include <exception>
 #include "velocities.h"
 
-double r0=1.;
+double r0;
+
+void initialize_r0(const double& new_r0)
+{
+  r0 = new_r0;
+}
 
 /**
  * @brief calculate angular velocity formula

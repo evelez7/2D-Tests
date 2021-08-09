@@ -178,24 +178,28 @@ int main(int argc, char **argv)
 {
   int p, log_n, np,ng;
 
-  cout << "number of grid points (log_2): ";
+  cout << "number of grid points (log_2):" << endl;
   cin >> log_n;
   ng = static_cast<int>(pow(2, log_n));
 
-  cout << "Enter p: ";
+  cout << "Enter p:" << endl;
   cin >> p;
   // array<double, DIM> center = { static_cast<double>(range)/2., static_cast<double>(range)/2. };
 
   double time;
-  cout << "Enter time: ";
+  cout << "Enter time:" << endl;
   cin >> time;
   time *= M_PI;
   int spline_choice;
-  cout << "Enter spline interpolant: ";
+  cout << "Enter spline interpolant:" << endl;
   cin >> spline_choice;
   int ppercell;
-  cout << "enter number of particles per cell" << endl;
+  cout << "enter number of particles per cell:" << endl;
   cin >> ppercell;
+  double r0;
+  cout << "enter r0:" << endl;
+  cin >> r0;
+  initialize_r0(r0); // set global in velocities.cpp to user input
   // Box grid_box(Point::Zeros(), Point::Unit()*np); // coordinates from (0,0) to (p, p)
   np=ng*ppercell;
   Point bottom_left(-ng, -ng);
@@ -207,10 +211,8 @@ int main(int argc, char **argv)
   // double hg = 1.;
   double hg = 1./static_cast<double>(ng); // interparticle spacing
   double hp = hg/ppercell;
-  cout << "Particles per cell: " << hg*hg/hp/hp << endl;
 
   auto particles = initialize_particles(hp, np);
-  // vector<Particle> particles = initialize_particles(grid.box(), hp, np);
   vector<Particle> rotated_particles = move_particles(particles, time, p);
 
   for (int i=0; i<rotated_particles.size(); ++i)
