@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "Proto_BoxData.H"
 #include "interpolate.h"
 #include "w.h"

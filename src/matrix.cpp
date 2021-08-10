@@ -1,5 +1,5 @@
 #include "matrix.h"
-#include "Proto_Point.h"
+#include "Proto_Point.H"
 
 array<array<double, DIM>, DIM> get_transpose(const array<array<double, DIM>, DIM>& matrix) {
   array<array<double, DIM>, DIM> transpose;
