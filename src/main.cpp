@@ -190,6 +190,13 @@ int main(int argc, char **argv)
   cout << "Enter time:" << endl;
   cin >> time;
   time *= M_PI;
+
+  cout << endl << "Spline choices are: " << endl;
+  for (int i=1; i <= get_interpolant_size(); ++i)
+  {
+    cout << i << ".) " << get_interpolant_name(i) << endl;
+  }
+
   int spline_choice;
   cout << "Enter spline interpolant:" << endl;
   cin >> spline_choice;
