@@ -79,20 +79,6 @@ void print_matrix(const array<array<double, DIM>, DIM>& matrix)
   cout << endl;
 }
 
-array<double, 3> get_characteristic_polynomial(const array<array<double, DIM>, DIM>& matrix)
-{
-  auto right_det = (matrix[0][1] * matrix[1][0]); // the rhs of determinant, b*c
-  auto constant = matrix[0][0] * matrix[1][1];
-  auto lambda_coeff_1 = -matrix[0][0];
-  auto lambda_coeff_2 = -matrix[1][1];
-
-  array<double, 3> characteristic_polynomial;
-  characteristic_polynomial[0] = 1;
-  characteristic_polynomial[1] = lambda_coeff_1 + lambda_coeff_2;
-  characteristic_polynomial[2] = constant - right_det;
-  return characteristic_polynomial;
-}
-
 array<double, DIM> multiply_vector_by_scalar(const array<double, DIM>& vec, const double& scalar)
 {
   array<double, DIM> result;
