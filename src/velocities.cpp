@@ -30,24 +30,33 @@ double find_velocity(const double& r, const int& p)
 double find_velocity_derivative(const double& r, const int& p)
 {
   double p_d = static_cast<double>(p);
-  double numerator = ((pow(r,2.) * p_d) + pow(r0, 2.)) *pow((pow(r0, 2.) - pow(r, 2.)), p_d);
-  double denominator = pow(r, 3.)*pow(r0, 2.*p_d)*(p_d+1);
-  return numerator/denominator;
+  // derivative with respect to r
+  // if (r <= r0)
+  // {
+  //   double numerator = ((pow(r,2.) * p_d) + pow(r0, 2.)) *pow((pow(r0, 2.) - pow(r, 2.)), p_d);
+  //   double denominator = pow(r, 3.)*pow(r0, 2.*p_d)*(p_d+1);
+  //   return numerator/denominator;
+  // } else if (r >= r0)
+  // {
+  //   return -pow(r0, 2.)/(pow(r, 3.) * (p +1.));
+  // }
 
-  // double lhs_num = pow(1. - (pow(r, 2.)/pow(r0, 2.)), p_d+1.) * log(1.- (pow(r, 2.)/pow(r0,2.))) * (p_d +1.);
-  // double rhs_num = pow(1. - (pow(r, 2.)/pow(r0, 2.)), p_d+1.);
-  // double num = (lhs_num - rhs_num) * pow(r0, 2.);
+  // with respect to p
+  if ( r <= r0)
+  {
+    double lhs_num = pow(1. - (pow(r, 2.)/pow(r0, 2.)), p_d+1.) * log(1.- (pow(r, 2.)/pow(r0,2.))) * (p_d +1.);
+    double rhs_num = pow(1. - (pow(r, 2.)/pow(r0, 2.)), p_d+1.);
+    double num = (lhs_num - rhs_num) * pow(r0, 2.);
 
-  // double denom = 2. * pow(r, 2.) * pow(p+1, 2.);
+    double denom = 2. * pow(r, 2.) * pow(p+1, 2.);
 
-  // return num/denom;
+    return num/denom;
+  } else if (r >= r0)
+  {
+    return -pow(r0, 2.)/(2. * pow(r, 2.) * pow(p+1., 2.));
+  }
 
-}
-
-double find_magnitude(const Point& alpha)
-{
-  double magnitude = sqrt(pow(alpha[0], 2.) + pow(alpha[1], 2.));
-  return magnitude;
+  // return 1.;
 }
 
 double find_magnitude(const array<double, DIM>& alpha)

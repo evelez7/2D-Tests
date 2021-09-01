@@ -176,8 +176,8 @@ array<double, DIM> get_sym_eigenvalues(const array<array<double, DIM>, DIM>& mat
   array<double, DIM> eigen_diag;
   // equation 32
   for (int i=0; i<DIM; ++i)
-    // eigen_diag[i] = sqrt(roots[i]);
-    eigen_diag[i] = roots[i];
+    eigen_diag[i] = sqrt(roots[i]);
+    // eigen_diag[i] = roots[i];
 
   return eigen_diag;
 }

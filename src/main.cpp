@@ -29,8 +29,9 @@ struct Particle
   double velocity;
   double eigen_1;
   double eigen_2;
-  Particle(double x, double y, double strength, double velocity, double eigen_1, double eigen_2)
-      : x(x), y(y), strength(strength), velocity(velocity), eigen_1(eigen_1), eigen_2(eigen_2)
+  double eigen_product;
+  Particle(double x, double y, double strength, double velocity, double eigen_1, double eigen_2, double eigen_product)
+      : x(x), y(y), strength(strength), velocity(velocity), eigen_1(eigen_1), eigen_2(eigen_2), eigen_product(eigen_product)
   {
   }
 };
@@ -96,7 +97,7 @@ inline void write_point_mesh(const char *filename, int npts, double *pts,
 
 void PWrite(const char *a_filename, const vector<Particle> particles, int fileCount)
 {
-  vector<vector<double>> vars(6);
+  vector<vector<double>> vars(7);
   unsigned int size = particles.size();
   vector<double> x(3 * size);
   vars[0] = vector<double>(size);
@@ -105,6 +106,7 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
   vars[3] = vector<double>(size);
   vars[4] = vector<double>(size);
   vars[5] = vector<double>(size);
+  vars[6] = vector<double>(size);
   for (unsigned int i = 0; i < size; ++i)
   {
     auto current_part = particles.at(i);
@@ -114,22 +116,24 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
     vars[3][i] = current_part.velocity;
     vars[4][i] = current_part.eigen_1;
     vars[5][i] = current_part.eigen_2;
+    vars[6][i] = current_part.eigen_product;
 
     x[i * 3] = current_part.x;
     x[i * 3 + 1] = current_part.y;
     x[i * 3 + 2] = 0.;
     // cout << "x: " << current_part.x << " y: " << current_part.y << endl;
   }
-  double *varPtr[6];
+  double *varPtr[7];
   varPtr[0] = &vars[0][0];
   varPtr[1] = &vars[1][0];
   varPtr[2] = &vars[2][0];
   varPtr[3] = &vars[3][0];
   varPtr[4] = &vars[4][0];
   varPtr[5] = &vars[5][0];
-  int vardim[6] = {1, 1, 1, 1, 1, 1};
-  const char *const varnames[] = {"x_1", "x_2", "strength", "velocity", "eigen_1", "eigen_2"};
-  write_point_mesh("parts", size, &(x[0]), 6, vardim, varnames, varPtr);
+  varPtr[6] = &vars[6][0];
+  int vardim[7] = {1, 1, 1, 1, 1, 1, 1};
+  const char *const varnames[] = {"x_1", "x_2", "strength", "velocity", "eigen_1", "eigen_2", "eigen_product"};
+  write_point_mesh("parts", size, &(x[0]), 7, vardim, varnames, varPtr);
 }
 
 void PWrite(vector<Particle> particles)
@@ -159,7 +163,7 @@ vector<Particle> initialize_particles(const double &hp, const int &np)
     for (int j = -np / 2; j < np / 2; ++j)
     {
       new_coords[1] = j * hp;
-      particles.emplace_back(new_coords[0], new_coords[1], pow(hp, 2.), 0., 0., 0.);
+      particles.emplace_back(new_coords[0], new_coords[1], pow(hp, 2.), 0., 0., 0., 0.);
     }
   }
   return particles;
@@ -173,11 +177,11 @@ vector<Particle> move_particles(vector<Particle> particles, const double &time, 
     array<double, DIM> part_coords{particles[i].x, particles[i].y};
     if (part_coords[0] == 0 && part_coords[1] == 0)
     {
-      rotated_particles.emplace_back(0., 0., particles[i].strength, particles[i].velocity, 0., 0.);
+      rotated_particles.emplace_back(0., 0., particles[i].strength, particles[i].velocity, 0., 0., 0.);
       continue;
     }
     auto projection = lagrangian_map(part_coords, time, p);
-    rotated_particles.emplace_back(projection[0], projection[1], particles[i].strength, particles[i].velocity, 0., 0.);
+    rotated_particles.emplace_back(projection[0], projection[1], particles[i].strength, particles[i].velocity, 0., 0., 0.);
   }
   return rotated_particles;
 }
@@ -240,8 +244,9 @@ int main(int argc, char **argv)
     for (int j = 0; j < DIM; ++j)
     {
       array<double, DIM> alpha_part{particles[i].x, particles[i].y};
-      auto lhs = multiply_matrix_by_vector(rotation(alpha_part, time, p), get_unit_vector(j));
+      auto lhs = multiply_matrix_by_vector(rotation(alpha_part, time, p), get_unit_vector(j+1));
       auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(alpha_part, time, p, j), alpha_part);
+
       if (j == 0)
       {
         deformation_matrix[0][0] = lhs[0] + rhs[0];
@@ -253,7 +258,7 @@ int main(int argc, char **argv)
         deformation_matrix[1][1] = lhs[1] + rhs[1];
       }
     }
-    print_matrix(deformation_matrix);
+    // print_matrix(deformation_matrix);
 
     auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
     //equation 30-32
@@ -262,31 +267,27 @@ int main(int argc, char **argv)
     auto grad_det = get_determinant(A_t_A);
     double eigen_product = eigenvalues[0] * eigenvalues[1];
     auto E_transposed = find_eigenvectors(A_t_A, eigenvalues); // conveniently, this is E transposed
+    verify_eigenvectors_verbose(A_t_A, E_transposed, eigenvalues);
     auto E = get_transpose(E_transposed); // do not confuse eigenvectors with E
 
     array<array<double, DIM>, DIM> diag;
     // diag[0][0] = sqrt(eigenvalues[0]);
-    diag[0][0] = sqrt(eigenvalues[0]);
+    diag[0][0] = eigenvalues[0];
     diag[0][1] = 0;
     // diag[1][1] = sqrt(eigenvalues[1]);
-    diag[1][1] = sqrt(eigenvalues[1]);
+    diag[1][1] = eigenvalues[1];
     diag[1][0] = 0;
     auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed);
-    auto first_matrix = multiply_matrices(A_t_A, E);
-    auto second_matrix = multiply_matrices(diag, E);
 
-    // cout << "A_t_A E" << endl;
-    // print_matrix(first_matrix);
-    // cout << "diag E" << endl;
-    // print_matrix(second_matrix);
-
-    // get the rotation values back from R
     auto R_inverse = get_inverse(R);
     auto Q = multiply_matrices(A_t_A, R_inverse);
     auto rotation_matrix = multiply_matrices(R_inverse, A_t_A);
     auto sym_eigenvalues = get_sym_eigenvalues(Q);
-    rotated_particles[i].eigen_1 = sqrt(sym_eigenvalues[0]);
-    rotated_particles[i].eigen_2 = sqrt(sym_eigenvalues[1]);
+    // rotated_particles[i].eigen_1 = sqrt(sym_eigenvalues[0]);
+    // rotated_particles[i].eigen_2 = sqrt(sym_eigenvalues[1]);
+    rotated_particles[i].eigen_1 = eigenvalues[0];
+    rotated_particles[i].eigen_2 = eigenvalues[1];
+    rotated_particles[i].eigen_product = eigen_product;
   }
   string filename = "grid";
   WriteData(grid, 0, hg, filename, filename);
@@ -330,13 +331,14 @@ matrix partial_derivative_rotation(const array<double, DIM> &alpha, const double
   rotation_matrix[1][0] = -cos(velocity * time) * time;
   rotation_matrix[1][1] = -sin(velocity * time) * time;
 
+  // partial derivative with respect to alpha_d
   double velocity_derivative = find_velocity_derivative(find_magnitude(alpha), p);
   double velocity_deriv_alpha = velocity_derivative * (alpha[d]/find_magnitude(alpha));
 
-  rotation_matrix[0][0] += velocity_deriv_alpha;
-  rotation_matrix[0][1] += velocity_deriv_alpha;
-  rotation_matrix[1][0] += velocity_deriv_alpha;
-  rotation_matrix[1][1] += velocity_deriv_alpha;
+  rotation_matrix[0][0] *= velocity_deriv_alpha;
+  rotation_matrix[0][1] *= velocity_deriv_alpha;
+  rotation_matrix[1][0] *= velocity_deriv_alpha;
+  rotation_matrix[1][1] *= velocity_deriv_alpha;
 
   return rotation_matrix;
 }
