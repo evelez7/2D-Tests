@@ -82,7 +82,7 @@ double L2_1(double x)
 
 double L2_2(double x)
 {
-  if (0 <= abs(x) && abs(x) < 1.)
+  if (0. <= abs(x) && abs(x) < 1.)
     return 1. - (pow(abs(x), 2)) - ((9. / 2.) * (pow(abs(x), 3))) + ((15. / 2.) * (pow(abs(x), 4))) - (3. * (pow(abs(x), 5)));
   else if (1. <= abs(x) && abs(x) < 2.)
     return (-4. + (18. * abs(x)) - (29. * (pow(abs(x), 2))) + ((43. / 2.) * (pow(abs(x), 3))) - ((15. / 2.) * (pow(abs(x), 4))) + (pow(abs(x), 5)));
@@ -96,7 +96,7 @@ double L4_2(double x)
     return (1. - ((5. / 4.) * (pow(abs(x), 2))) - ((35. / 12.) * (pow(abs(x), 3))) + ((21. / 4.) * (pow(abs(x), 4))) - ((25. / 12.) * (pow(abs(x), 5))));
   else if (1. <= abs(x) && abs(x) < 2.)
     return (-4. + ((75. / 4.) * (abs(x))) - ((245. / 8.) * (pow(abs(x), 2))) + ((545. / 24.) * (pow(abs(x), 3))) - ((63. / 8.) * (pow(abs(x), 4))) + ((25. / 24.) * (pow(abs(x), 5))));
-  else if (2. < abs(x) && abs(x) < 3.)
+  else if (2. <= abs(x) && abs(x) < 3.)
     return (18. - ((153. / 4.) * (abs(x))) + ((255. / 8.) * (pow(abs(x), 2))) - ((313. / 24.) * (pow(abs(x), 3))) + ((21. / 8.) * (pow(abs(x), 4))) - ((5. / 24.) * (pow(abs(x), 5))));
   else if (3 <= abs(x))
     return 0.;
@@ -114,15 +114,13 @@ double L4_4(double x)
     return 0;
 }
 
-double w_helper(array<double, DIM> z, const double &h_g, double (*w)(double))
+double w_helper(array<double, DIM> z, const double &h_g, w_ptr w)
 {
-  // cout << "z in helper: " << z[0] << "," << z[1] << endl;
   double product = 1.;
   for (int i = 0; i < DIM; ++i)
   {
     product *= (1. / h_g) * w(z[i] / h_g);
   }
-  // cout << "product in helper: " << product << endl;
   return product;
 }
 

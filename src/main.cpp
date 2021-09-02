@@ -48,7 +48,7 @@ matrix rotation(const array<double, DIM> &, const double &, const int &);
 
 array<double, DIM> partial_derivative_x(const array<double, DIM> &, const double &, const int &, const int &);
 
-matrix partial_derivative_rotation(const array<double, DIM> &, const double &, const int &, const int &);
+matrix partial_derivative_rotation(const array<double, DIM> &, const array<double, DIM> &, const double &, const int &, const int &);
 
 array<double, DIM> init_point(const Point &j, const double &h_p, const double &time, const int &p)
 {
@@ -243,9 +243,10 @@ int main(int argc, char **argv)
     array<array<double, DIM>, DIM> deformation_matrix;
     for (int j = 0; j < DIM; ++j)
     {
-      array<double, DIM> alpha_part{particles[i].x, particles[i].y};
+      array<double, DIM> alpha_part{rotated_particles[i].x, rotated_particles[i].y};
+      array<double, DIM> alpha_part_original{particles[i].x, particles[i].y};
       auto lhs = multiply_matrix_by_vector(rotation(alpha_part, time, p), get_unit_vector(j+1));
-      auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(alpha_part, time, p, j), alpha_part);
+      auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(alpha_part, alpha_part_original, time, p, j), alpha_part);
 
       if (j == 0)
       {
@@ -267,7 +268,7 @@ int main(int argc, char **argv)
     auto grad_det = get_determinant(A_t_A);
     double eigen_product = eigenvalues[0] * eigenvalues[1];
     auto E_transposed = find_eigenvectors(A_t_A, eigenvalues); // conveniently, this is E transposed
-    verify_eigenvectors_verbose(A_t_A, E_transposed, eigenvalues);
+    // verify_eigenvectors_verbose(A_t_A, E_transposed, eigenvalues);
     auto E = get_transpose(E_transposed); // do not confuse eigenvectors with E
 
     array<array<double, DIM>, DIM> diag;
@@ -277,12 +278,11 @@ int main(int argc, char **argv)
     // diag[1][1] = sqrt(eigenvalues[1]);
     diag[1][1] = eigenvalues[1];
     diag[1][0] = 0;
-    auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed);
+    auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix
 
     auto R_inverse = get_inverse(R);
-    auto Q = multiply_matrices(A_t_A, R_inverse);
-    auto rotation_matrix = multiply_matrices(R_inverse, A_t_A);
-    auto sym_eigenvalues = get_sym_eigenvalues(Q);
+    auto Q = multiply_matrices(deformation_matrix, R_inverse); // rotation
+    // auto sym_eigenvalues = get_sym_eigenvalues(R);
     // rotated_particles[i].eigen_1 = sqrt(sym_eigenvalues[0]);
     // rotated_particles[i].eigen_2 = sqrt(sym_eigenvalues[1]);
     rotated_particles[i].eigen_1 = eigenvalues[0];
@@ -322,7 +322,7 @@ matrix rotation(const array<double, DIM> &alpha, const double &time, const int &
  * @param p
  * @return matrix
  */
-matrix partial_derivative_rotation(const array<double, DIM> &alpha, const double &time, const int &p, const int &d)
+matrix partial_derivative_rotation(const array<double, DIM> &alpha, const array<double, DIM> &original_alpha, const double &time, const int &p, const int &d)
 {
   double velocity = find_velocity(find_magnitude(alpha), p);
   matrix rotation_matrix;
@@ -333,7 +333,7 @@ matrix partial_derivative_rotation(const array<double, DIM> &alpha, const double
 
   // partial derivative with respect to alpha_d
   double velocity_derivative = find_velocity_derivative(find_magnitude(alpha), p);
-  double velocity_deriv_alpha = velocity_derivative * (alpha[d]/find_magnitude(alpha));
+  double velocity_deriv_alpha = velocity_derivative * (original_alpha[d]/find_magnitude(alpha));
 
   rotation_matrix[0][0] *= velocity_deriv_alpha;
   rotation_matrix[0][1] *= velocity_deriv_alpha;
