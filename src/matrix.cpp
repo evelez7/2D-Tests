@@ -45,11 +45,10 @@ array<double, DIM> multiply_matrix_by_vector(const array<array<double, DIM>, DIM
 {
   array<double, DIM> new_vector;
   for (int i=0;i<DIM;++i) {
-    double sum = 0;
-    for (int j=0; j< matrix[i].size(); ++j) {
-      sum +=  matrix[i][j] * vec[j];
+    new_vector[i] = 0;
+    for (int j=0; j < matrix[i].size(); ++j) {
+      new_vector[i] +=  matrix[i][j] * vec[j];
     }
-    new_vector[i] = sum;
   }
   return new_vector;
 }
