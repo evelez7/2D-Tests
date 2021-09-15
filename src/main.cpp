@@ -127,6 +127,7 @@ int main(int argc, char **argv)
   vector<Particle> particles = initialize_particles(hp, np);
   vector<Particle> rotated_particles = move_particles(particles, time, p, r0);
 
+  cout << "starting eigenvalue stuff" << endl;
   for (int i = 0; i < rotated_particles.size(); ++i)
   {
     array<double, DIM> x_k{rotated_particles[i].x, rotated_particles[i].y};
@@ -167,7 +168,7 @@ int main(int argc, char **argv)
     diag[1][1] = eigenvalues[1];
     diag[1][0] = 0;
 
-    auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix
+    auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix 
     auto R_inverse = get_inverse(R);
     auto Q = multiply_matrices(deformation_matrix, R_inverse); // rotation
 
@@ -182,7 +183,9 @@ int main(int argc, char **argv)
     // }
   }
   string filename = "grid";
+  cout << "Writing grid to files" << endl;
   WriteData(grid, 0, hg, filename, filename);
+  cout << "Writing particles to grid" << endl;
   PWrite(rotated_particles);
 
   return 0;
@@ -195,8 +198,10 @@ array<double, DIM> lagrangian_map(const array<double, DIM> &alpha, const double 
 
 matrix rotation(const array<double, DIM> &alpha, const double &time, const int &p, const double &r0)
 {
-  double velocity = find_velocity(find_magnitude(alpha), p, r0);
+  double magnitude = find_magnitude(alpha);
+  double velocity = find_velocity(magnitude, p, r0);
   cout << "velocity: " << velocity << endl;
+  cout << "magnitude: " << magnitude << endl;
   cout << "time: " << time << endl;
   matrix rotation_matrix;
   rotation_matrix[0][0] = cos(velocity * time);

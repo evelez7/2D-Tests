@@ -15,7 +15,7 @@ double find_velocity(const double& r, const int& p, const double& r0)
     return (1. - pow((1. - pow(r/r0, 2)), p+1))/(2. * static_cast<double>(p+1)*pow(r/r0, 2));
   else if (r > r0)
     return 1./(2.*static_cast<double>(p+1) * pow(r/r0, 2));
-  else if (r==0.)
+  else if (r0==0.)
     return 0.;
 }
 
