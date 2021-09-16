@@ -1,13 +1,19 @@
 #include <algorithm>
+#include <cmath>
 #include "Proto_BoxData.H"
 #include "interpolate.h"
 #include "w.h"
 
 std::map<double (*)(double), std::tuple<int, int>> r_map = {
-    {w_2, std::make_tuple(0, 1)},
-    {w_3, std::make_tuple(-1, 2)},
-    {w_4, std::make_tuple(-1, 2)},
-    {w_6, std::make_tuple(-2, 3)}};
+  {w_2, std::make_tuple(0, 1)},
+  {w_3, std::make_tuple(-1, 2)},
+  {w_4, std::make_tuple(-1, 2)},
+  {w_6, std::make_tuple(-2, 3)},
+  {L2_1, std::make_tuple(-1, 2)},
+  {L2_2, std::make_tuple(-1, 2)},
+  {L4_2, std::make_tuple(-2, 3)},
+  {L4_4, std::make_tuple(-2, 3)}
+};
 
 const double limit = 0.7;
 
@@ -43,7 +49,9 @@ void complete_grid(vector<array<double, DIM>>& points_to_consider, const array<d
 }
 
 vector<array<double, DIM>> compute_points_to_consider(const array<double, DIM> &original_point, const int& choice) {
+  // cout << "before rmap" << endl;
   auto r_tuple = r_map[get_w(choice)];
+  // cout << "after rmap" << endl;
   auto r_low = get<0>(r_tuple);
   auto r_high = get<1>(r_tuple);
 
@@ -96,6 +104,13 @@ void interpolate(BoxData<double>& grid, const double& q_k, const array<double, D
     array<double, DIM> z = { x_bar[0] - x_k[0], x_bar[1] - x_k[1] };
     // array<double, DIM> z = { x_k[0] - x_bar[0], x_k[1] - x_bar[1] };
 
+    if (isnan(z[0]) || isnan(z[1]))
+    {
+      cout << "current_point: (" << current_point[0] << "," << current_point[1] << ")" << endl;
+      cout << "x_k: (" << x_k[0] << "," << x_k[1] << ")" << endl;
+      cout << "x_bar: (" << x_bar[0] << "," << x_bar[1] << ")" << endl;
+      cout << "h_g: " << hg << endl;
+    }
     double w_result = w(z, hg, choice);
     Point to_store { static_cast<int>(current_point[0]), static_cast<int>(current_point[1]) };
 

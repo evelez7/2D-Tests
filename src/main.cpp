@@ -63,21 +63,9 @@ vector<Particle> move_particles(const vector<Particle> particles, const double &
   vector<Particle> rotated_particles;
   for (int i = 0; i < particles.size(); ++i)
   {
-    // if (( particles[i].x >= -1e-6) && particles[i].x <= 1e-6) && (particles[i].y <= 1e-6 && particles[i].y)
-    // {
-    //   rotated_particles.emplace_back(0., 0., particles[i].strength, particles[i].velocity, 0., 0., 0.);
-    //   cout << "HERE" << endl;
-    // }
-    // if (particles[i].x == 0. && particles[i].y == 0.)
-    // {
-    //   rotated_particles.emplace_back(0., 0., particles[i].strength, particles[i].velocity, 0., 0., 0.);
-    // }
-    // else
-    // {
-      array<double, DIM> part_coords{particles[i].x, particles[i].y};
-      auto projection = lagrangian_map(part_coords, time, p, r0);
-      rotated_particles.emplace_back(projection[0], projection[1], particles[i].strength, particles[i].velocity, 0., 0., 0.);
-    //}
+    array<double, DIM> part_coords{particles[i].x, particles[i].y};
+    auto projection = lagrangian_map(part_coords, time, p, r0);
+    rotated_particles.emplace_back(projection[0], projection[1], particles[i].strength, particles[i].velocity, 0., 0., 0.);
   }
   return rotated_particles;
 }
@@ -127,7 +115,7 @@ int main(int argc, char **argv)
   vector<Particle> particles = initialize_particles(hp, np);
   vector<Particle> rotated_particles = move_particles(particles, time, p, r0);
 
-  cout << "starting eigenvalue stuff" << endl;
+  // cout << "starting eigenvalue stuff" << endl;
   for (int i = 0; i < rotated_particles.size(); ++i)
   {
     array<double, DIM> x_k{rotated_particles[i].x, rotated_particles[i].y};
@@ -168,19 +156,13 @@ int main(int argc, char **argv)
     diag[1][1] = eigenvalues[1];
     diag[1][0] = 0;
 
-    auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix 
+    auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix
     auto R_inverse = get_inverse(R);
     auto Q = multiply_matrices(deformation_matrix, R_inverse); // rotation
 
     rotated_particles[i].eigen_1 = eigenvalues[0];
     rotated_particles[i].eigen_2 = eigenvalues[1];
     rotated_particles[i].eigen_product = eigen_product;
-    // if (eigenvalues[0] > 100. || eigenvalues[1] > 100.)
-    // {
-    //   cout << "(" << rotated_particles[i].x << "," << rotated_particles[i].y << ")" << endl;
-    //   print_matrix(deformation_matrix);
-    //   cout << endl;
-    // }
   }
   string filename = "grid";
   cout << "Writing grid to files" << endl;
@@ -193,16 +175,17 @@ int main(int argc, char **argv)
 
 array<double, DIM> lagrangian_map(const array<double, DIM> &alpha, const double &time, const int &p, const double &r0)
 {
-  return multiply_matrix_by_vector(rotation(alpha, time, p, r0), alpha);
+  auto rotation_matrix = rotation(alpha, time, p, r0);
+  auto projection = multiply_matrix_by_vector(rotation_matrix, alpha);
+  return projection;
 }
 
 matrix rotation(const array<double, DIM> &alpha, const double &time, const int &p, const double &r0)
 {
   double magnitude = find_magnitude(alpha);
-  double velocity = find_velocity(magnitude, p, r0);
-  cout << "velocity: " << velocity << endl;
-  cout << "magnitude: " << magnitude << endl;
-  cout << "time: " << time << endl;
+  double velocity = 0.;
+  if (magnitude != 0.)
+    velocity = find_velocity(magnitude, p, r0);
   matrix rotation_matrix;
   rotation_matrix[0][0] = cos(velocity * time);
   rotation_matrix[0][1] = sin(velocity * time);
@@ -225,10 +208,10 @@ matrix partial_derivative_rotation(const array<double, DIM> &alpha, const array<
 {
   double velocity = find_velocity(find_magnitude(original_alpha), p, r0);
   matrix rotation_matrix;
-  rotation_matrix[0][0] = -sin(velocity * time) ;
-  rotation_matrix[0][1] = cos(velocity * time) ;
-  rotation_matrix[1][0] = -cos(velocity * time) ;
-  rotation_matrix[1][1] = -sin(velocity * time) ;
+  rotation_matrix[0][0] = -sin(velocity * time);
+  rotation_matrix[0][1] = cos(velocity * time);
+  rotation_matrix[1][0] = -cos(velocity * time);
+  rotation_matrix[1][1] = -sin(velocity * time);
 
   // partial derivative with respect to alpha_d
   double velocity_derivative = find_velocity_derivative(find_magnitude(original_alpha), p, r0);

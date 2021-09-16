@@ -15,7 +15,7 @@ double w_2(double x)
   {
     return 1. - abs_x;
   }
-  return 0.;
+  return 0;
 }
 
 double w_3(double x)
@@ -30,8 +30,7 @@ double w_3(double x)
   {
     return ((1.0 / 2.0) * pow(2.0 - abs_x, 2.0)) * (1.0 - abs_x);
   }
-
-  return 0.;
+  return 0;
 }
 
 double w_4(double x)
@@ -46,8 +45,7 @@ double w_4(double x)
   {
     return 1.0 - ((11.0 * abs_x) / 6.0) + pow(abs_x, 2.0) - (pow(abs_x, 3.0) / 6.0);
   }
-
-  return 0.;
+  return 0;
 }
 
 double w_6(double x)
@@ -66,18 +64,19 @@ double w_6(double x)
   {
     return 1.0 - ((137.0 * abs_x) / 60.0) + ((15.0 * pow(abs_x, 2.0)) / 8.0) - ((17.0 * pow(abs_x, 3.0)) / 24.0) + (pow(abs_x, 4.0) / 8.0) - (pow(abs_x, 5.0) / 120.0);
   }
-
-  return 0.;
+  return 0;
 }
 
 double L2_1(double x)
 {
-  if (0 <= abs(x) && abs(x) < 1.)
+  double abs_x = abs(x);
+  if (0 <= abs_x && abs_x < 1.)
     return 1. - ((5. / 2.) * (pow(abs(x), 2))) + ((3. / 2.) * (pow(abs(x), 3)));
-  else if (1 <= abs(x) && abs(x) < 2.)
+  else if (1 <= abs_x && abs_x < 2.)
     return 2. - (4. * (abs(x))) + ((5. / 2.) * (pow(abs(x), 2))) - ((pow(abs(x), 3.)) / 2.);
-  else if (2 <= abs(x))
+  else if (2 <= abs_x)
     return 0.;
+  throw new runtime_error("Reached end of L2_1 without falling into an if clause");
 }
 
 double L2_2(double x)
@@ -88,6 +87,7 @@ double L2_2(double x)
     return (-4. + (18. * abs(x)) - (29. * (pow(abs(x), 2))) + ((43. / 2.) * (pow(abs(x), 3))) - ((15. / 2.) * (pow(abs(x), 4))) + (pow(abs(x), 5)));
   else if (2 <= abs(x))
     return 0.;
+  throw new runtime_error("Reached end of L2_2 without falling into an if clause");
 }
 
 double L4_2(double x)
@@ -100,6 +100,7 @@ double L4_2(double x)
     return (18. - ((153. / 4.) * (abs(x))) + ((255. / 8.) * (pow(abs(x), 2))) - ((313. / 24.) * (pow(abs(x), 3))) + ((21. / 8.) * (pow(abs(x), 4))) - ((5. / 24.) * (pow(abs(x), 5))));
   else if (3 <= abs(x))
     return 0.;
+  throw new runtime_error("Reached end of L4_2 without falling into an if clause");
 }
 
 double L4_4(double x)
@@ -112,6 +113,7 @@ double L4_4(double x)
     return (5913. - ((89235. / 4.) * (abs(x))) + ((297585. / 8.) * pow(abs(x), 2)) - ((143895. / 4.) * pow(abs(x), 3)) + ((177871. / 8.) * pow(abs(x), 4)) - ((54641. / 6.) * pow(abs(x), 5)) + ((19775. / 8.) * pow(abs(x), 6)) - ((1715. / 4.) * pow(abs(x), 7)) + ((345. / 8.) * pow(abs(x), 8)) - ((23. / 12.) * pow(abs(x), 9)));
   else if (abs(x) >= 3)
     return 0;
+  throw new runtime_error("Reached end of L4_4 without falling into an if clause");
 }
 
 double w_helper(array<double, DIM> z, const double &h_g, w_ptr w)
