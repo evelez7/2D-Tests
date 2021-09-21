@@ -104,17 +104,10 @@ void interpolate(BoxData<double>& grid, const double& q_k, const array<double, D
     array<double, DIM> z = { x_bar[0] - x_k[0], x_bar[1] - x_k[1] };
     // array<double, DIM> z = { x_k[0] - x_bar[0], x_k[1] - x_bar[1] };
 
-    if (isnan(z[0]) || isnan(z[1]))
-    {
-      cout << "current_point: (" << current_point[0] << "," << current_point[1] << ")" << endl;
-      cout << "x_k: (" << x_k[0] << "," << x_k[1] << ")" << endl;
-      cout << "x_bar: (" << x_bar[0] << "," << x_bar[1] << ")" << endl;
-      cout << "h_g: " << hg << endl;
-    }
     double w_result = w(z, hg, choice);
     Point to_store { static_cast<int>(current_point[0]), static_cast<int>(current_point[1]) };
 
-    array<double, DIM> scaled_grid_point { current_point[0] * hg, current_point[1] * hg };
+    // array<double, DIM> scaled_grid_point { current_point[0] * hg, current_point[1] * hg };
     if (grid.box().contains(to_store))
     {
       if ((scaled_grid_point[0] <= limit && scaled_grid_point[0] >= -limit) && (scaled_grid_point[1] <= limit && scaled_grid_point[1] >= -limit))

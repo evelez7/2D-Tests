@@ -5,7 +5,7 @@
 void PWrite(vector<Particle> particles)
 {
   static int fileCount = 0;
-  static char nameBuffer[10];
+  static char nameBuffer[20];
   sprintf(nameBuffer, "PART.%d", fileCount);
   PWrite(nameBuffer, particles, fileCount);
 }
@@ -53,7 +53,7 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
 {
   vector<vector<double>> vars(7);
   unsigned int size = particles.size();
-  vector<double> x(2 * size);
+  vector<double> x(3 * size);
   vars[0] = vector<double>(size);
   vars[1] = vector<double>(size);
   vars[2] = vector<double>(size);

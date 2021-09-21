@@ -45,14 +45,7 @@ vector<Particle> initialize_particles(const double &hp, const int &np)
   {
     for (int j = static_cast<int>(-np / 2); j < static_cast<int>(np / 2); ++j)
     {
-      if (i==0 && j==0)
-        particles.emplace_back(0., 0., pow(hp, 2), 0., 0., 0., 0.);
-      else if (i==0)
-        particles.emplace_back(0., static_cast<double>(j) * hp, pow(hp, 2), 0., 0., 0., 0.);
-      else if (j==0)
-        particles.emplace_back(static_cast<double>(i) * hp, 0., pow(hp, 2), 0., 0., 0., 0.);
-      else
-        particles.emplace_back(static_cast<double>(i) * hp, static_cast<double>(j) * hp, pow(hp, 2.), 0., 0., 0., 0.);
+      particles.emplace_back(static_cast<double>(i) * hp, static_cast<double>(j) * hp, pow(hp, 2.), 0., 0., 0., 0.);
     }
   }
   return particles;
@@ -125,7 +118,6 @@ int main(int argc, char **argv)
     for (int j = 0; j < DIM; ++j)
     {
       array<double, DIM> alpha{particles[i].x, particles[i].y};
-      // CHECK UNIT VECTOR FUNCTION
       auto lhs = multiply_matrix_by_vector(rotation(alpha, time, p, r0), get_unit_vector(j + 1));
       auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(x_k, alpha, time, p, j, r0), alpha);
 
@@ -143,7 +135,6 @@ int main(int argc, char **argv)
 
     auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
     //equation 30-32
-    // auto eigenvalues = get_sym_eigenvalues(A_t_A);
     auto eigenvalues = get_sym_eigenvalues(A_t_A);
     auto grad_det = get_determinant(A_t_A);
     double eigen_product = eigenvalues[0] * eigenvalues[1];

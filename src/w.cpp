@@ -12,10 +12,10 @@ double w_2(double x)
 {
   double abs_x = abs(x);
   if (abs_x >= 0. && abs_x <= 1.)
-  {
     return 1. - abs_x;
-  }
-  return 0;
+  else
+    return 0.;
+  throw new runtime_error("Reached end of W_2 without falling into an if clause");
 }
 
 double w_3(double x)
@@ -23,14 +23,13 @@ double w_3(double x)
   auto abs_x = abs(x);
 
   if (abs_x >= 0 && abs_x <= 1)
-  {
     return 1.0 - ((5.0 / 2.0) * pow(abs_x, 2.0)) + ((3.0 / 2.0) * pow(abs_x, 3.0));
-  }
   else if (abs_x >= 1 && abs_x <= 2)
-  {
     return ((1.0 / 2.0) * pow(2.0 - abs_x, 2.0)) * (1.0 - abs_x);
-  }
-  return 0;
+  else
+    return 0;
+
+  throw new runtime_error("Reached end of W_3 without falling into an if clause");
 }
 
 double w_4(double x)
@@ -38,14 +37,12 @@ double w_4(double x)
   auto abs_x = abs(x);
 
   if (abs_x >= 0.0 && abs_x <= 1.0)
-  {
     return 1.0 - (abs_x / 2.0) - pow(abs_x, 2.0) + (pow(abs_x, 3.0) / 2.0);
-  }
   else if (abs_x >= 1.0 && abs_x <= 2.0)
-  {
     return 1.0 - ((11.0 * abs_x) / 6.0) + pow(abs_x, 2.0) - (pow(abs_x, 3.0) / 6.0);
-  }
-  return 0;
+  else
+    return 0;
+  throw new runtime_error("Reached end of W_4 without falling into an if clause");
 }
 
 double w_6(double x)
@@ -53,18 +50,14 @@ double w_6(double x)
   auto abs_x = abs(x);
 
   if (abs_x >= 0.0 && abs_x <= 1.0)
-  {
     return 1.0 - (abs_x / 3.0) - ((5.0 * pow(abs_x, 2.0)) / 4.0) + ((5.0 * pow(abs_x, 3.0)) / 12.0) + (pow(abs_x, 4.0) / 4.0) - (pow(abs_x, 5.0) / 12.0);
-  }
   else if (abs_x >= 1.0 && abs_x <= 2.0)
-  {
     return 1.0 - ((13.0 * abs_x) / 12.0) - ((5.0 * pow(abs_x, 2.0)) / 8.0) + ((25.0 * pow(abs_x, 3.0)) / 24.0) - ((3.0 * pow(abs_x, 4.0)) / 8.0) + (pow(abs_x, 5.0) / 24.0);
-  }
   else if (abs_x >= 2.0 && abs_x <= 3.0)
-  {
     return 1.0 - ((137.0 * abs_x) / 60.0) + ((15.0 * pow(abs_x, 2.0)) / 8.0) - ((17.0 * pow(abs_x, 3.0)) / 24.0) + (pow(abs_x, 4.0) / 8.0) - (pow(abs_x, 5.0) / 120.0);
-  }
-  return 0;
+  else
+    return 0;
+  throw new runtime_error("Reached end of W_6 without falling into an if clause");
 }
 
 double L2_1(double x)
