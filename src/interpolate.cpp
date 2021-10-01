@@ -65,7 +65,6 @@ void interpolate_test(const double& q_k, const array<double, DIM> x_k, const dou
     array<double, DIM> x_bar = { current_point[0] * hg, current_point[1] * hg };
 
     array<double, DIM> z = { x_bar[0] - x_k[0], x_bar[1] - x_k[1] };
-    // array<double, DIM> z = { x_k[0] - x_bar[0], x_k[1] - x_bar[1] };
 
     double w_result = w(z, hg, choice);
     Point to_store { static_cast<int>(current_point[0]), static_cast<int>(current_point[1]) };
