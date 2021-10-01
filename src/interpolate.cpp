@@ -49,9 +49,7 @@ void complete_grid(vector<array<double, DIM>>& points_to_consider, const array<d
 }
 
 vector<array<double, DIM>> compute_points_to_consider(const array<double, DIM> &original_point, const int& choice) {
-  // cout << "before rmap" << endl;
   auto r_tuple = r_map[get_w(choice)];
-  // cout << "after rmap" << endl;
   auto r_low = get<0>(r_tuple);
   auto r_high = get<1>(r_tuple);
 
@@ -60,13 +58,10 @@ vector<array<double, DIM>> compute_points_to_consider(const array<double, DIM> &
 
   for (int i = r_low; i <= r_high; ++i) {
     array<double, DIM> new_1 = {original_point[0] + i, original_point[1]};
-    // points_to_consider.push_back(new_1);
     complete_grid(points_to_consider, new_1);
     array<double, DIM> new_2 = {original_point[0], original_point[1] + i};
-    // points_to_consider.push_back(new_2);
     complete_grid(points_to_consider, new_2);
     array<double, DIM> new_3 = {original_point[0] + i, original_point[1] + i};
-    // points_to_consider.push_back(new_);
     complete_grid(points_to_consider, new_3);
   }
 
@@ -108,7 +103,6 @@ void interpolate_test(const double& q_k, const array<double, DIM> x_k, const dou
     array<double, DIM> x_bar = { current_point[0] * hg, current_point[1] * hg };
 
     array<double, DIM> z = { x_bar[0] - x_k[0], x_bar[1] - x_k[1] };
-    // array<double, DIM> z = { x_k[0] - x_bar[0], x_k[1] - x_bar[1] };
 
     double w_result = w(z, hg, choice);
     Point to_store { static_cast<int>(current_point[0]), static_cast<int>(current_point[1]) };

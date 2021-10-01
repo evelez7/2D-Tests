@@ -115,11 +115,17 @@ int main(int argc, char **argv)
     interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
 
     array<array<double, DIM>, DIM> deformation_matrix;
+    deformation_matrix[0][0] = 0.;
+    deformation_matrix[1][0] = 0.;
+    deformation_matrix[0][1] = 0.;
+    deformation_matrix[1][1] = 0.;
+    matrix partial_velocity;
     for (int j = 0; j < DIM; ++j)
     {
       array<double, DIM> alpha{particles[i].x, particles[i].y};
       auto lhs = multiply_matrix_by_vector(rotation(alpha, time, p, r0), get_unit_vector(j + 1));
-      auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(x_k, alpha, time, p, j, r0), alpha);
+      partial_velocity = partial_derivative_rotation(x_k, alpha, time, p, j, r0);
+      auto rhs = multiply_matrix_by_vector(partial_velocity, alpha);
 
       if (j == 0)
       {
@@ -158,8 +164,9 @@ int main(int argc, char **argv)
   string filename = "grid";
   cout << "Writing grid to files" << endl;
   WriteData(grid, 0, hg, filename, filename);
-  cout << "Writing particles to grid" << endl;
+  cout << "Writing particles to file" << endl;
   PWrite(rotated_particles);
+  cout << "Done" << endl;
 
   return 0;
 }
@@ -199,19 +206,15 @@ matrix partial_derivative_rotation(const array<double, DIM> &alpha, const array<
 {
   double velocity = find_velocity(find_magnitude(original_alpha), p, r0);
   matrix rotation_matrix;
-  rotation_matrix[0][0] = -sin(velocity * time);
-  rotation_matrix[0][1] = cos(velocity * time);
-  rotation_matrix[1][0] = -cos(velocity * time);
-  rotation_matrix[1][1] = -sin(velocity * time);
 
   // partial derivative with respect to alpha_d
   double velocity_derivative = find_velocity_derivative(find_magnitude(original_alpha), p, r0);
   double velocity_deriv_alpha = velocity_derivative * (original_alpha[d] / find_magnitude(alpha));
 
-  rotation_matrix[0][0] *= velocity_deriv_alpha;
-  rotation_matrix[0][1] *= velocity_deriv_alpha;
-  rotation_matrix[1][0] *= velocity_deriv_alpha;
-  rotation_matrix[1][1] *= velocity_deriv_alpha;
+  rotation_matrix[0][0] = -sin(velocity * time) * time * velocity_deriv_alpha;
+  rotation_matrix[0][1] = cos(velocity * time) * time* velocity_deriv_alpha;
+  rotation_matrix[1][0] = -cos(velocity * time) * time* velocity_deriv_alpha;
+  rotation_matrix[1][1] = -sin(velocity * time) * time* velocity_deriv_alpha;
 
   return rotation_matrix;
 }
