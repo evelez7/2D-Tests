@@ -20,19 +20,22 @@ double find_velocity(const double &r, const int &p, const double &r0)
   throw new runtime_error("Reached end of find_velocity without falling into an if clause");
 }
 
-// TODO
 double find_velocity_derivative(const double &r, const int &p, const double &r0)
 {
-  double p_d = static_cast<double>(p);
   // derivative with respect to r
-  if (r < r0)
+  if (r <=r0)
   {
-    double numerator = (pow(r,2)*pow((pow(r0,2)-pow(r,2)), p)*pow(r0,-2*(p+1))+pow(r,2)*p*pow((pow(r0,2)-pow(r,2)), p)*pow(r0, -2*(p+1))+pow((-(pow(r,2)/pow(r0,2))+1),p+1))*pow(r0,2);
-    double denominator = (p+1)*pow(r,3);
+    // double numerator = (1./r0) * (static_cast<double>(p+1)*pow(1.-pow(r/r0, 2), p)*pow(r/r0, 2)-pow(1.-(1.-pow(r/r0, 2)), p+1));
+    // double denominator = static_cast<double>(p+1)*pow(r/r0,3);
+
+    double numerator = (1./r0) * (static_cast<double>(p+1) * pow(1.-pow(r/r0,2), p) * pow(r/r0,2) - (1-pow(1-pow(r/r0, 2), p+1)));
+    double denominator = (p+1)*pow(r/r0, 3);
     return numerator / denominator;
   }
   else if (r > r0)
-    return -((pow(r0,2))/(pow(r, 3)*(p+1)));
+  {
+    return -pow(r0,2)/(pow(r, 3)*static_cast<double>(p+1));
+  }
   else if (r0==0.)
     return 0.;
   throw new runtime_error("Reached end of find_velocity_derivative without falling into an if clause");

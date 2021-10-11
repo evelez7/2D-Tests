@@ -70,7 +70,7 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
     vars[3][i] = current_part.velocity;
     vars[4][i] = current_part.eigen_1;
     vars[5][i] = current_part.eigen_2;
-    vars[6][i] = current_part.eigen_product;
+    vars[6][i] = current_part.eigen_1 * current_part.eigen_2;
 
     x[i * 3] = current_part.x;
     x[i * 3 + 1] = current_part.y;
