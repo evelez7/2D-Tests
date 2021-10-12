@@ -29,6 +29,11 @@ matrix rotation(const array<double, DIM> &, const double &, const int &, const d
 
 matrix partial_derivative_rotation(const array<double, DIM> &, const array<double, DIM> &, const double &, const int &, const int &, const double &);
 
+matrix compute_deformation_matrix(const Particle &, const Particle &, const double &, const double &, const double &);
+vector<matrix> compute_deformation_matrices(const vector<Particle> &, const vector<Particle> &, const double &, const double &, const double &);
+
+array<matrix, 2> compute_R_Q(const matrix &);
+
 void print_array(const array<double, DIM> &to_print)
 {
   cout << "{ ";
@@ -107,10 +112,10 @@ int main(int argc, char **argv)
 
   vector<Particle> particles = initialize_particles(hp, np);
   vector<Particle> rotated_particles = move_particles(particles, time, p, r0);
-
   for (int i = 0; i < rotated_particles.size(); ++i)
   {
     array<double, DIM> x_k{rotated_particles[i].x, rotated_particles[i].y};
+    array<double, DIM> alpha{particles[i].x, particles[i].y};
     interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
 
     array<array<double, DIM>, DIM> deformation_matrix;
@@ -121,7 +126,6 @@ int main(int argc, char **argv)
     // fill deformation matrix
     for (int j = 0; j < DIM; ++j)
     {
-      array<double, DIM> alpha{particles[i].x, particles[i].y};
       auto lhs = multiply_matrix_by_vector(rotation(alpha, time, p, r0), get_unit_vector(j + 1));
       auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(x_k, alpha, time, p, j, r0), alpha);
 
@@ -142,18 +146,6 @@ int main(int argc, char **argv)
     auto eigenvalues = get_sym_eigenvalues(A_t_A);
     auto grad_det = get_determinant(A_t_A);
     double eigen_product = eigenvalues[0] * eigenvalues[1];
-    auto E_transposed = find_eigenvectors(A_t_A, eigenvalues); // conveniently, this is E transposed
-    auto E = get_transpose(E_transposed); // do not confuse eigenvectors with E
-
-    array<array<double, DIM>, DIM> diag;
-    diag[0][0] = eigenvalues[0];
-    diag[0][1] = 0;
-    diag[1][1] = eigenvalues[1];
-    diag[1][0] = 0;
-
-    auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix
-    auto R_inverse = get_inverse(R);
-    auto Q = multiply_matrices(deformation_matrix, R_inverse); // rotation
 
     rotated_particles[i].eigen_1 = eigenvalues[0];
     rotated_particles[i].eigen_2 = eigenvalues[1];
@@ -162,10 +154,103 @@ int main(int argc, char **argv)
   string filename = "grid";
   cout << "Writing grid to files" << endl;
   WriteData(grid, 0, hg, filename, filename);
-  cout << "Writing particles to grid" << endl;
+  cout << "Writing particles to file" << endl;
   PWrite(rotated_particles);
+  cout << "Finished" << endl;
 
   return 0;
+}
+
+// return a deformation matrix from individual particles
+matrix compute_deformation_matrix(const Particle &particle, const Particle &rotated_particle, const double &time, const double &p, const double &r0)
+{
+  matrix deformation_matrix;
+  deformation_matrix[0][0] = 0.;
+  deformation_matrix[0][1] = 0.;
+  deformation_matrix[1][0] = 0.;
+  deformation_matrix[1][1] = 0.;
+  // fill deformation matrix
+  array<double, DIM> alpha{particle.x, particle.y};
+  array<double, DIM> x_k{rotated_particle.x, rotated_particle.y};
+  for (int j = 0; j < DIM; ++j)
+  {
+    auto lhs = multiply_matrix_by_vector(rotation(alpha, time, p, r0), get_unit_vector(j + 1));
+    auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(x_k, alpha, time, p, j, r0), alpha);
+    if (j == 0)
+    {
+      deformation_matrix[0][0] = lhs[0] + rhs[0];
+      deformation_matrix[1][0] = lhs[1] + rhs[1];
+    }
+    else if (j == 1)
+    {
+      deformation_matrix[0][1] = lhs[0] + rhs[0];
+      deformation_matrix[1][1] = lhs[1] + rhs[1];
+    }
+  }
+  return deformation_matrix;
+}
+
+// returns a vector of deformation matrices in order of the original particle vector
+vector<matrix> compute_deformation_matrices(const vector<Particle> &particles, const vector<Particle> &rotated_particles, const double &time, const double &p, const double &r0)
+{
+  vector<matrix> deformation_matrices;
+  for (int i = 0; i < particles.size(); ++i)
+  {
+    array<double, DIM> alpha{particles[i].x, particles[i].y};
+    array<double, DIM> x_k{rotated_particles[i].x, rotated_particles[i].y};
+
+    array<array<double, DIM>, DIM> deformation_matrix;
+    deformation_matrix[0][0] = 0.;
+    deformation_matrix[0][1] = 0.;
+    deformation_matrix[1][0] = 0.;
+    deformation_matrix[1][1] = 0.;
+    // fill deformation matrix
+    for (int j = 0; j < DIM; ++j)
+    {
+      auto lhs = multiply_matrix_by_vector(rotation(alpha, time, p, r0), get_unit_vector(j + 1));
+      auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(x_k, alpha, time, p, j, r0), alpha);
+
+      if (j == 0)
+      {
+        deformation_matrix[0][0] = lhs[0] + rhs[0];
+        deformation_matrix[1][0] = lhs[1] + rhs[1];
+      }
+      else if (j == 1)
+      {
+        deformation_matrix[0][1] = lhs[0] + rhs[0];
+        deformation_matrix[1][1] = lhs[1] + rhs[1];
+      }
+    }
+    deformation_matrices.push_back(deformation_matrix);
+  }
+  return deformation_matrices;
+}
+
+// returns an array where arr[0] = R, arr[1] = Q
+array<matrix, 2> compute_R_Q(const matrix &deformation_matrix)
+{
+  auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
+  // equation 30-32
+  auto eigenvalues = get_sym_eigenvalues(A_t_A);
+  auto grad_det = get_determinant(A_t_A);
+  double eigen_product = eigenvalues[0] * eigenvalues[1];
+  auto E_transposed = find_eigenvectors(A_t_A, eigenvalues);              // conveniently, this is E transposed
+  auto E = get_transpose(E_transposed); // do not confuse eigenvectors with E
+
+  array<array<double, DIM>, DIM> diag;
+  diag[0][0] = eigenvalues[0];
+  diag[0][1] = 0;
+  diag[1][1] = eigenvalues[1];
+  diag[1][0] = 0;
+
+  auto R = multiply_matrices(multiply_matrices(E, diag),
+                             E_transposed); // symm matrix
+  auto R_inverse = get_inverse(R);
+  auto Q = multiply_matrices(deformation_matrix, R_inverse); // rotation
+  array<matrix, 2> matrices;
+  matrices[0] = R;
+  matrices[1] = Q;
+  return matrices;
 }
 
 array<double, DIM> lagrangian_map(const array<double, DIM> &alpha, const double &time, const int &p, const double &r0)
