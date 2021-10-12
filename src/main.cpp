@@ -114,33 +114,9 @@ int main(int argc, char **argv)
   vector<Particle> rotated_particles = move_particles(particles, time, p, r0);
   for (int i = 0; i < rotated_particles.size(); ++i)
   {
-    array<double, DIM> x_k{rotated_particles[i].x, rotated_particles[i].y};
-    array<double, DIM> alpha{particles[i].x, particles[i].y};
     interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
 
-    array<array<double, DIM>, DIM> deformation_matrix;
-    deformation_matrix[0][0] = 0.;
-    deformation_matrix[0][1] = 0.;
-    deformation_matrix[1][0] = 0.;
-    deformation_matrix[1][1] = 0.;
-    // fill deformation matrix
-    for (int j = 0; j < DIM; ++j)
-    {
-      auto lhs = multiply_matrix_by_vector(rotation(alpha, time, p, r0), get_unit_vector(j + 1));
-      auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(x_k, alpha, time, p, j, r0), alpha);
-
-      if (j == 0)
-      {
-        deformation_matrix[0][0] = lhs[0] + rhs[0];
-        deformation_matrix[1][0] = lhs[1] + rhs[1];
-      }
-      else if (j == 1)
-      {
-        deformation_matrix[0][1] = lhs[0] + rhs[0];
-        deformation_matrix[1][1] = lhs[1] + rhs[1];
-      }
-    }
-
+    array<array<double, DIM>, DIM> deformation_matrix = compute_deformation_matrix(particles[i], rotated_particles[i], time, p, r0);
     auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
     //equation 30-32
     auto eigenvalues = get_sym_eigenvalues(A_t_A);
@@ -286,6 +262,11 @@ matrix rotation(const array<double, DIM> &alpha, const double &time, const int &
  */
 matrix partial_derivative_rotation(const array<double, DIM> &alpha, const array<double, DIM> &original_alpha, const double &time, const int &p, const int &d, const double &r0)
 {
+  // edge case for the very center particle
+  if (find_magnitude(original_alpha) == 0.)
+  {
+    return get_zero_matrix();
+  }
   double velocity = find_velocity(find_magnitude(original_alpha), p, r0);
   // partial derivative with respect to alpha_d
   double velocity_derivative = find_velocity_derivative(find_magnitude(original_alpha), p, r0);

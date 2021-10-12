@@ -78,6 +78,14 @@ void print_matrix(const array<array<double, DIM>, DIM>& matrix)
   cout << endl;
 }
 
+void print_vector(const array<double, DIM> &vec)
+{
+  cout << "(";
+  for (int i=0; i<DIM; ++i)
+    cout << vec[i] << ", ";
+  cout << ")" << endl;
+}
+
 array<double, DIM> multiply_vector_by_scalar(const array<double, DIM>& vec, const double& scalar)
 {
   array<double, DIM> result;
@@ -113,4 +121,14 @@ array<double, DIM> get_unit_vector(const int& d)
     unit_vector[i] = 0.;
   }
   return unit_vector;
+}
+
+matrix get_zero_matrix()
+{
+  matrix zero;
+  zero[0][0] = 0.;
+  zero[0][1] = 0.;
+  zero[1][0] = 0.;
+  zero[1][1] = 0.;
+  return zero;
 }

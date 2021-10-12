@@ -21,6 +21,8 @@ array<array<double, DIM>, DIM> get_inverse(const array<array<double, DIM>, DIM>&
 
 void print_matrix(const array<array<double, DIM>, DIM>&);
 
+void print_vector(const array<double, DIM> &);
+
 array<double, 3> get_characteristic_polynomial(const array<array<double, DIM>, DIM>&);
 
 array<double, DIM> multiply_vector_by_scalar(const array<double, DIM>&, const double&);
@@ -28,5 +30,7 @@ array<double, DIM> multiply_vector_by_scalar(const array<double, DIM>&, const do
 matrix multiply_matrix_by_scalar(matrix, const double&);
 
 array<double, DIM> get_unit_vector(const int&);
+
+matrix get_zero_matrix();
 
 #endif
