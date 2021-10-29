@@ -157,6 +157,13 @@ array<array<double, DIM>, DIM> find_eigenvectors(const array<array<double, DIM>,
     eigenvectors[1][0] = b;
     eigenvectors[1][1] = eigenvalues[1] - a;
   }
+  // eigenvectors[0][0] = A[0][1];
+  // eigenvectors[0][1] = eigenvalues[0] - A[0][0];
+  // eigenvectors[1][0] = eigenvalues[1] - A[1][1];
+  // eigenvectors[1][1] = A[1][0];
+  // eigenvectors[0][0] = -A[0][1];
+  // eigenvectors[1][0] = A[0][0] - eigenvalues[0];
+  // eigenvectors[0][1] = A[1][1] - eigenvalue
 
   return eigenvectors;
 }
@@ -203,8 +210,8 @@ array<double, DIM> get_eigenvalues_trace(const array<array<double, DIM>, DIM>& m
   double trace = matrix[0][0] + matrix[1][1];
   double determinant = (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0]);
   array<double, DIM> eigenvalues;
-  eigenvalues[0] = (trace/2) + sqrt( (pow(trace, 2.)/4) - determinant);
-  eigenvalues[1] = (trace/2) - sqrt( (pow(trace, 2.)/4) - determinant);
+  eigenvalues[0] = sqrt((trace/2) + sqrt( (pow(trace, 2.)/4) - determinant));
+  eigenvalues[1] = sqrt((trace/2) - sqrt( (pow(trace, 2.)/4) - determinant));
 
   return eigenvalues;
 }
@@ -215,13 +222,4 @@ double get_magnitude(const array<double, DIM> &vec)
   for (auto elem : vec)
     sum += pow(elem, 2);
   return sqrt(sum);
-}
-
-bool matrices_are_equal(const array<array<double, DIM>, DIM>& matrix_1, const array<array<double, DIM>, DIM>& matrix_2)
-{
-  for (int i=0; i<DIM; ++i)
-    for (int j=0; j<DIM; ++j)
-      if (matrix_1[i][j] != matrix_2[i][j]) return false;
-
-  return true;
 }

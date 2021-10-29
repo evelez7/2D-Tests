@@ -31,7 +31,7 @@ array<array<double, DIM>, DIM> multiply_matrices(const array<array<double, DIM>,
   {
     for (int j=0; j<DIM;++j)
     {
-      product[i][j] = 0;
+      product[i][j] = 0.;
       for (int k=0; k<DIM;++k)
       {
         product[i][j] += first[i][k] * second[k][j];
@@ -131,4 +131,95 @@ matrix get_zero_matrix()
   zero[1][0] = 0.;
   zero[1][1] = 0.;
   return zero;
+}
+
+bool is_identity(const matrix &m, const double& margin)
+{
+  if (abs(m[0][0] - 1.) >= margin)
+    return false;
+  if (abs(m[0][1] - 0.) >= margin)
+    return false;
+  if (abs(m[1][0] - 0.) >= margin)
+    return false;
+  if (abs(m[1][1] - 1.) >= margin)
+    return false;
+  return true;
+}
+
+// check if matrices are equal according to a margin of error between respective indices
+bool matrices_are_equal(const matrix &m_1, const matrix &m_2, const double &margin)
+{
+  for (int i=0; i<DIM; ++i)
+    for (int j=0; j<DIM; ++j)
+    {
+      if (abs(m_1[i][j] - m_2[i][j]) <= margin)
+        continue;
+      else
+        return false;
+    }
+  return true;
+}
+
+// detailed check on whether or not R and Q are valid matrices
+// Q will be an orthogonal rotation matrix
+void verify_R_Q(const matrix &R, const matrix& Q, const matrix& deformation_matrix)
+{
+  cout << boolalpha;
+  cout << endl << "NEW VERIFICATION" << endl;
+  bool R_inverse_valid = is_identity(multiply_matrices(R, get_inverse(R)), 0.001);
+  bool R_transpose_valid =matrices_are_equal(get_transpose(R), R);
+  auto R_R = multiply_matrices(R, R);
+  bool R_R_valid = matrices_are_equal(R_R, multiply_matrices(get_transpose(deformation_matrix), deformation_matrix), 0.1);
+  cout << "verify for R" << endl;
+  cout << "R^T = R : " <<  R_transpose_valid << endl;
+  cout << "R * R^-1 = I : " << R_inverse_valid << endl;
+  cout << "R * R = A^T * A: " << R_R_valid << endl;
+  cout << endl;
+
+  cout << "verify for Q" << endl;
+  bool Q_inverse_transpose = matrices_are_equal(get_inverse(Q), get_transpose(Q), 0.001);
+  bool Q_identity = is_identity(multiply_matrices(Q, get_transpose(Q)), 0.001);
+  bool Q_R_mult = matrices_are_equal(multiply_matrices(Q, R), deformation_matrix, 0.001);
+  cout << "Q^-1 = Q^T : " <<  Q_inverse_transpose << endl;
+  cout << "Q * Q^T = I : " <<  Q_identity << endl;
+  cout << "Q * R = A : " <<  Q_R_mult << endl;
+  cout << endl;
+
+  if (!R_inverse_valid || !R_transpose_valid || !Q_inverse_transpose || Q_identity || Q_R_mult)
+  {
+
+  cout << "A" << endl;
+  print_matrix(deformation_matrix);
+  cout << "R_R" << endl;
+  print_matrix(R_R);
+  cout << "R" << endl;
+  print_matrix(R);
+  cout << "R^T" << endl;
+  print_matrix(get_transpose(R));
+  cout << "R^-1" << endl;
+  print_matrix(get_inverse(R));
+  cout << "Q" << endl;
+  print_matrix(Q);
+  cout << "Q^-1" << endl;
+  print_matrix(get_inverse(Q));
+  cout << "Q^T" << endl;
+  print_matrix(get_transpose(Q));
+  }
+
+  bool q_det;
+  if (get_determinant(Q) == 1.)
+    q_det = true;
+  else
+    q_det = false;
+  cout << "det(Q) = 1 : " << q_det << " it is " << get_determinant(Q) << endl;
+  cout << endl;
+}
+
+bool matrices_are_equal(const array<array<double, DIM>, DIM>& matrix_1, const array<array<double, DIM>, DIM>& matrix_2)
+{
+  for (int i=0; i<DIM; ++i)
+    for (int j=0; j<DIM; ++j)
+      if (matrix_1[i][j] != matrix_2[i][j]) return false;
+
+  return true;
 }

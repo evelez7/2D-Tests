@@ -114,6 +114,7 @@ int main(int argc, char **argv)
   vector<Particle> rotated_particles = move_particles(particles, time, p, r0);
   for (int i = 0; i < rotated_particles.size(); ++i)
   {
+    array<double, DIM> x_k {rotated_particles[i].x, rotated_particles[i].y};
     interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
 
     array<array<double, DIM>, DIM> deformation_matrix = compute_deformation_matrix(particles[i], rotated_particles[i], time, p, r0);
@@ -126,6 +127,7 @@ int main(int argc, char **argv)
     rotated_particles[i].eigen_1 = eigenvalues[0];
     rotated_particles[i].eigen_2 = eigenvalues[1];
     rotated_particles[i].eigen_product = eigen_product;
+    auto r_q = compute_R_Q(deformation_matrix);
   }
   string filename = "grid";
   cout << "Writing grid to files" << endl;
@@ -207,11 +209,13 @@ array<matrix, 2> compute_R_Q(const matrix &deformation_matrix)
 {
   auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
   // equation 30-32
-  auto eigenvalues = get_sym_eigenvalues(A_t_A);
-  auto grad_det = get_determinant(A_t_A);
+  auto eigenvalues = get_eigenvalues_trace(A_t_A);
   double eigen_product = eigenvalues[0] * eigenvalues[1];
-  auto E_transposed = find_eigenvectors(A_t_A, eigenvalues);              // conveniently, this is E transposed
-  auto E = get_transpose(E_transposed); // do not confuse eigenvectors with E
+  auto E = find_eigenvectors(A_t_A, eigenvalues);              // conveniently, this is E transposed
+  auto E_transposed = get_transpose(E); // do not confuse eigenvectors with E
+  verify_eigenvectors(A_t_A, E, eigenvalues);
+  // auto E_transposed = find_eigenvectors(deformation_matrix, eigenvalues);
+  // auto E = get_transpose(E_transposed);
 
   array<array<double, DIM>, DIM> diag;
   diag[0][0] = eigenvalues[0];
@@ -219,13 +223,15 @@ array<matrix, 2> compute_R_Q(const matrix &deformation_matrix)
   diag[1][1] = eigenvalues[1];
   diag[1][0] = 0;
 
-  auto R = multiply_matrices(multiply_matrices(E, diag),
-                             E_transposed); // symm matrix
-  auto R_inverse = get_inverse(R);
-  auto Q = multiply_matrices(deformation_matrix, R_inverse); // rotation
+  auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix
+  // auto R = multiply_matrices(multiply_matrices(E_transposed, diag), E);
+  auto Q = multiply_matrices(deformation_matrix, get_inverse(R)); // rotation
+  // auto Q = multiply_matrices(get_inverse(R), deformation_matrix);
   array<matrix, 2> matrices;
   matrices[0] = R;
   matrices[1] = Q;
+
+  verify_R_Q(R, Q, deformation_matrix);
   return matrices;
 }
 
@@ -238,16 +244,16 @@ array<double, DIM> lagrangian_map(const array<double, DIM> &alpha, const double 
 
 matrix rotation(const array<double, DIM> &alpha, const double &time, const int &p, const double &r0)
 {
-  double magnitude = find_magnitude(alpha);
   double velocity = 0.;
-  if (magnitude != 0.)
-    velocity = find_velocity(magnitude, p, r0);
+  if (find_magnitude(alpha) != 0.)
+  {
+    velocity = find_velocity(find_magnitude(alpha), p, r0);
+  }
   matrix rotation_matrix;
   rotation_matrix[0][0] = cos(velocity * time);
   rotation_matrix[0][1] = sin(velocity * time);
   rotation_matrix[1][0] = -sin(velocity * time);
   rotation_matrix[1][1] = cos(velocity * time);
-  //print_matrix(rotation_matrix);
 
   return rotation_matrix;
 }

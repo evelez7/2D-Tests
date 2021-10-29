@@ -33,4 +33,11 @@ array<double, DIM> get_unit_vector(const int&);
 
 matrix get_zero_matrix();
 
+bool is_identity(const matrix &, const double& margin = 0.);
+
+bool matrices_are_equal(const matrix &, const matrix &, const double &);
+
+bool matrices_are_equal(const matrix &, const matrix &);
+
+void verify_R_Q(const matrix &, const matrix &, const matrix &);
 #endif
