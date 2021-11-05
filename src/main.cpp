@@ -82,7 +82,7 @@ int main(int argc, char **argv)
   double time;
   cout << "Enter time:" << endl;
   cin >> time;
-  // time *= M_PI;
+  time *= M_PI;
 
   cout << endl
        << "Spline choices are: " << endl;
