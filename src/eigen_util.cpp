@@ -15,16 +15,11 @@ array<double, DIM> get_roots(const array<double, 3>& characteristic_polynomial)
   {
     roots[0] = (-b + sqrt(discriminant))/(2*a);
     roots[1] = (-b - sqrt(discriminant))/(2*a);
-  } else if (discriminant == 0 || discriminant < 1e-10)
+  } else if (discriminant == 0. || discriminant < 1e-10)
   {
     roots[0] = -b/(2.*a);
     roots[1]=roots[0];
   }
-  // if (discriminant < 1e-10)
-  // {
-  //   cout << "root 1: " << roots[0] << endl;
-  //   cout << "root 2: " << roots[1] << endl;
-  // }
   return roots;
 }
 
@@ -116,61 +111,44 @@ void verify_eigenvectors(const array<array<double, DIM>, DIM>& matrix, const arr
   print_matrix(matrix);
   for (int i=0; i<DIM; ++i)
   {
-      auto rhs = multiply_vector_by_scalar(eigenvectors[i], eigenvalues[i]);
-      auto lhs = multiply_matrix_by_vector(matrix, eigenvectors[i]);
-      for (int j=0; j<DIM; ++j)
+      array<double, DIM> eigenvector;
+      if (i==0)
       {
-        double error = lhs.at(j) - rhs.at(j);
-        cout << "error: " << error << " ";
+        eigenvector[0] = eigenvectors[0][0];
+        eigenvector[1] = eigenvectors[1][0];
       }
+      if (i==1)
+      {
+
+        eigenvector[0] = eigenvectors[0][1];
+        eigenvector[1] = eigenvectors[1][1];
+      }
+      auto rhs = multiply_vector_by_scalar(eigenvector, eigenvalues[i]);
+      auto lhs = multiply_matrix_by_vector(matrix, eigenvector);
+        cout << "lhs: " << lhs[0] << "," << rhs[0] << endl;
+        cout << "rhs: " << rhs[0] << "," << rhs[1] << endl;
       cout << endl;
   }
   cout << endl;
 }
 
-array<array<double, DIM>, DIM> find_eigenvectors(const array<array<double, DIM>, DIM> &A, const array<double, DIM> &eigenvalues)
+matrix find_trace_eigenvectors(const array<array<double, DIM>, DIM>& matrix_A, const array<double, DIM> &eigenvalues)
 {
-  // take the special case that we have a 2x2 matrix
-  array<array<double, DIM>, DIM> eigenvectors;
-
-  double a = A[0][0];
-  double b = A[0][1];
-  double c = A[1][0];
-  double d = A[1][1];
-
-  if ((c == 0 || c < 1e-5) && (b == 0 || b < 1e-5))
-  {
-    eigenvectors[0][0] = 1;
-    eigenvectors[0][1] = 0;
-    eigenvectors[1][0] = 0;
-    eigenvectors[1][1] = 1;
-  } else if (c != 0 || c > 1e-5)
-  {
-    eigenvectors[0][0] = eigenvalues[0] - d;
-    eigenvectors[0][1] = c;
-    eigenvectors[1][0] = eigenvalues[1] - d;
-    eigenvectors[1][1] = c;
-  } else if (b != 0 || b > 1e-5)
-  {
-    eigenvectors[0][0] = b;
-    eigenvectors[0][1] = eigenvalues[0] - a;
-    eigenvectors[1][0] = b;
-    eigenvectors[1][1] = eigenvalues[1] - a;
-  }
-  // eigenvectors[0][0] = A[0][1];
-  // eigenvectors[0][1] = eigenvalues[0] - A[0][0];
-  // eigenvectors[1][0] = eigenvalues[1] - A[1][1];
-  // eigenvectors[1][1] = A[1][0];
-  // eigenvectors[0][0] = -A[0][1];
-  // eigenvectors[1][0] = A[0][0] - eigenvalues[0];
-  // eigenvectors[0][1] = A[1][1] - eigenvalue
-
+  auto first_matrix = multiply_matrix_by_scalar(get_identity_matrix(), eigenvalues[0]);
+  auto first_eigenvector_matrix = subtract_matrices(matrix_A, first_matrix);
+  auto second_matrix = multiply_matrix_by_scalar(get_identity_matrix(), eigenvalues[1]);
+  auto second_eigenvector_matrix = subtract_matrices(matrix_A, second_matrix);
+  matrix eigenvectors;
+  eigenvectors[0][0] = second_eigenvector_matrix[0][0];
+  eigenvectors[1][0] = second_eigenvector_matrix[1][0];
+  eigenvectors[0][1] = first_eigenvector_matrix[0][0];
+  eigenvectors[1][1] = first_eigenvector_matrix[1][0];
   return eigenvectors;
 }
 
 // equation 30-32
 // returns the square root of the eigenvalues of the symmetric matrix R of the polar decomposition of the gradient
-array<double, DIM> get_sym_eigenvalues(const array<array<double, DIM>, DIM>& matrix)
+array<double, DIM> find_sym_eigenvalues(const array<array<double, DIM>, DIM>& matrix)
 {
   // equation 31
   auto poly = get_characteristic_polynomial(matrix);
@@ -187,31 +165,22 @@ array<double, DIM> get_sym_eigenvalues(const array<array<double, DIM>, DIM>& mat
   return eigen_diag;
 }
 
-array<double, DIM> get_eigenvalues(const array<array<double, DIM>, DIM>& matrix)
+array<double, DIM> find_eigenvalues(const array<array<double, DIM>, DIM>& matrix)
 {
-
-  // equation 31
-  auto poly = get_characteristic_polynomial(matrix);
-  auto roots = get_roots(poly);
-
-  // visual verification where the determinants should be close to 0
-  // verify_eigen_values(A_t_A, roots);
-
-  array<double, DIM> eigen_diag;
-  // equation 32
-  for (int i=0; i<DIM; ++i)
-    eigen_diag[i] = roots[i];
-
-  return eigen_diag;
+  auto to_return = find_eigenvalues(matrix);
+  to_return[0] = pow(to_return[0], 2);
+  to_return[1] = pow(to_return[1], 2);
+  return to_return;
 }
 
-array<double, DIM> get_eigenvalues_trace(const array<array<double, DIM>, DIM>& matrix)
+// square root of the eigenvalues from the trace method
+array<double, DIM> find_trace_eigenvalues(const array<array<double, DIM>, DIM>& matrix)
 {
   double trace = matrix[0][0] + matrix[1][1];
-  double determinant = (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0]);
+  double determinant = (matrix[0][0]*matrix[1][1]) - (matrix[0][1] * matrix[1][0]);
   array<double, DIM> eigenvalues;
-  eigenvalues[0] = sqrt((trace/2) + sqrt( (pow(trace, 2.)/4) - determinant));
-  eigenvalues[1] = sqrt((trace/2) - sqrt( (pow(trace, 2.)/4) - determinant));
+  eigenvalues[0] = sqrt((trace + sqrt(pow(trace, 2) - (4*determinant)))/2);
+  eigenvalues[1] = sqrt((trace - sqrt(pow(trace, 2) - (4*determinant)))/2);
 
   return eigenvalues;
 }

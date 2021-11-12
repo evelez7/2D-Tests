@@ -32,7 +32,7 @@ matrix partial_derivative_rotation(const array<double, DIM> &, const array<doubl
 matrix compute_deformation_matrix(const Particle &, const Particle &, const double &, const double &, const double &);
 vector<matrix> compute_deformation_matrices(const vector<Particle> &, const vector<Particle> &, const double &, const double &, const double &);
 
-array<matrix, 2> compute_R_Q(const matrix &);
+array<matrix, 2> compute_R_Q(const matrix &, const array<double, DIM>&);
 
 void print_array(const array<double, DIM> &to_print)
 {
@@ -120,14 +120,15 @@ int main(int argc, char **argv)
     array<array<double, DIM>, DIM> deformation_matrix = compute_deformation_matrix(particles[i], rotated_particles[i], time, p, r0);
     auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
     //equation 30-32
-    auto eigenvalues = get_sym_eigenvalues(A_t_A);
+    auto eigenvalues = find_trace_eigenvalues(A_t_A);
     auto grad_det = get_determinant(A_t_A);
     double eigen_product = eigenvalues[0] * eigenvalues[1];
 
     rotated_particles[i].eigen_1 = eigenvalues[0];
     rotated_particles[i].eigen_2 = eigenvalues[1];
     rotated_particles[i].eigen_product = eigen_product;
-    auto r_q = compute_R_Q(deformation_matrix);
+    auto r_q = compute_R_Q(deformation_matrix, eigenvalues);
+    verify_R_Q(r_q[0], r_q[1], deformation_matrix);
   }
   string filename = "grid";
   cout << "Writing grid to files" << endl;
@@ -205,17 +206,12 @@ vector<matrix> compute_deformation_matrices(const vector<Particle> &particles, c
 }
 
 // returns an array where arr[0] = R, arr[1] = Q
-array<matrix, 2> compute_R_Q(const matrix &deformation_matrix)
+array<matrix, 2> compute_R_Q(const matrix &deformation_matrix, const array<double, DIM>& eigenvalues)
 {
   auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
   // equation 30-32
-  auto eigenvalues = get_eigenvalues_trace(A_t_A);
-  double eigen_product = eigenvalues[0] * eigenvalues[1];
-  auto E = find_eigenvectors(A_t_A, eigenvalues);              // conveniently, this is E transposed
-  auto E_transposed = get_transpose(E); // do not confuse eigenvectors with E
-  verify_eigenvectors(A_t_A, E, eigenvalues);
-  // auto E_transposed = find_eigenvectors(deformation_matrix, eigenvalues);
-  // auto E = get_transpose(E_transposed);
+  auto E = find_trace_eigenvectors(A_t_A, eigenvalues);
+  auto E_transposed = get_transpose(E);
 
   array<array<double, DIM>, DIM> diag;
   diag[0][0] = eigenvalues[0];
@@ -223,15 +219,14 @@ array<matrix, 2> compute_R_Q(const matrix &deformation_matrix)
   diag[1][1] = eigenvalues[1];
   diag[1][0] = 0;
 
-  auto R = multiply_matrices(multiply_matrices(E, diag), E_transposed); // symm matrix
-  // auto R = multiply_matrices(multiply_matrices(E_transposed, diag), E);
+  auto R_lhs = multiply_matrices(E, diag);
+  auto R = multiply_matrices(R_lhs, E_transposed); // symm matrix
+  // auto R = multiply_matrices(E_transposed, R_lhs);
   auto Q = multiply_matrices(deformation_matrix, get_inverse(R)); // rotation
-  // auto Q = multiply_matrices(get_inverse(R), deformation_matrix);
   array<matrix, 2> matrices;
   matrices[0] = R;
   matrices[1] = Q;
 
-  verify_R_Q(R, Q, deformation_matrix);
   return matrices;
 }
 
@@ -275,13 +270,13 @@ matrix partial_derivative_rotation(const array<double, DIM> &alpha, const array<
   }
   double velocity = find_velocity(find_magnitude(original_alpha), p, r0);
   // partial derivative with respect to alpha_d
-  double velocity_derivative = find_velocity_derivative(find_magnitude(original_alpha), p, r0);
+  double velocity_derivative = find_velocity_derivative(find_magnitude(original_ialpha), p, r0);
   double velocity_deriv_alpha = velocity_derivative * (original_alpha[d] / find_magnitude(alpha));
   matrix rotation_matrix;
-  rotation_matrix[0][0] = -sin(velocity * time) * time * velocity_deriv_alpha;
-  rotation_matrix[0][1] = cos(velocity * time) * time * velocity_deriv_alpha;
-  rotation_matrix[1][0] = -cos(velocity * time) * time * velocity_deriv_alpha;
-  rotation_matrix[1][1] = -sin(velocity * time) * time * velocity_deriv_alpha;
+  rotation_matrix[0][0] = -sin(velocity_deriv_alpha * time) * time * velocity_deriv_alpha;
+  rotation_matrix[0][1] = cos(velocity_deriv_alpha * time) * time * velocity_deriv_alpha;
+  rotation_matrix[1][0] = -cos(velocity_deriv_alpha * time) * time * velocity_deriv_alpha;
+  rotation_matrix[1][1] = -sin(velocity_deriv_alpha * time) * time * velocity_deriv_alpha;
 
   return rotation_matrix;
 }

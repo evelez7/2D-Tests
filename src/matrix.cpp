@@ -21,7 +21,7 @@ double get_determinant(const array<array<double, DIM>, DIM>& matrix)
   double c = matrix.at(1).at(0);
   double d = matrix.at(1).at(1);
 
-  return (a*d) + (-1. * (b*c));
+  return (a*d) - (b*c);
 }
 
 array<array<double, DIM>, DIM> multiply_matrices(const array<array<double, DIM>, DIM>& first, const array<array<double, DIM>, DIM>& second)
@@ -190,6 +190,8 @@ void verify_R_Q(const matrix &R, const matrix& Q, const matrix& deformation_matr
 
   cout << "A" << endl;
   print_matrix(deformation_matrix);
+  cout << "Q * R = A" << endl;
+  print_matrix(multiply_matrices(Q, R));
   cout << "R_R" << endl;
   print_matrix(R_R);
   cout << "R" << endl;
@@ -222,4 +224,27 @@ bool matrices_are_equal(const array<array<double, DIM>, DIM>& matrix_1, const ar
       if (matrix_1[i][j] != matrix_2[i][j]) return false;
 
   return true;
+}
+
+matrix subtract_matrices(const matrix& m_1, const matrix& m_2)
+{
+  matrix to_return;
+  for (int i=0; i<DIM; ++i)
+  {
+    for (int j=0; j<DIM; ++j)
+    {
+      to_return[i][j] = m_1[i][j] - m_2[i][j];
+    }
+  }
+  return to_return;
+}
+
+matrix get_identity_matrix()
+{
+  matrix identity_matrix;
+  identity_matrix[0][0] = 1.;
+  identity_matrix[0][1] = 0.;
+  identity_matrix[1][0] = 0.;
+  identity_matrix[1][1] = 1.;
+  return identity_matrix;
 }

@@ -9,6 +9,8 @@ using namespace std;
 
 typedef array<array<double, DIM>, DIM> matrix;
 
+matrix get_identity_matrix();
+
 array<array<double, DIM>, DIM> get_transpose(const array<array<double, DIM>, DIM>&);
 
 double get_determinant(const array<array<double, DIM>, DIM>&);
@@ -28,6 +30,8 @@ array<double, 3> get_characteristic_polynomial(const array<array<double, DIM>, D
 array<double, DIM> multiply_vector_by_scalar(const array<double, DIM>&, const double&);
 
 matrix multiply_matrix_by_scalar(matrix, const double&);
+
+matrix subtract_matrices(const matrix&, const matrix&);
 
 array<double, DIM> get_unit_vector(const int&);
 
