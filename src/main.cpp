@@ -114,6 +114,7 @@ int main(int argc, char **argv)
   vector<Particle> rotated_particles = move_particles(particles, time, p, r0);
   for (int i = 0; i < rotated_particles.size(); ++i)
   {
+    array<double, DIM> x_k{rotated_particles[i].x, rotated_particles[i].y};
     interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
 
     array<array<double, DIM>, DIM> deformation_matrix = compute_deformation_matrix(particles[i], rotated_particles[i], time, p, r0);
