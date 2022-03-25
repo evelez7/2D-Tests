@@ -101,8 +101,6 @@ int main(int argc, char **argv)
   double r0;
   int ppercell;
   
-  p=8;log_n=6;time= .5*M_PI;spline_choice = 6;r0=.5;ppercell=2;
-  #if 0
   cout << "Enter p:" << endl;
   cin >> p;
    cout << "Enter spline interpolant:" << endl;
@@ -125,7 +123,7 @@ int main(int argc, char **argv)
   
   cout << "enter r0:" << endl;
   cin >> r0;
-#endif
+
   ng = static_cast<int>(pow(2, log_n));
   np = ng * ppercell;
   Point bottom_left(-ng, -ng);
