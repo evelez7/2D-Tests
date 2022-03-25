@@ -111,7 +111,7 @@ matrix multiply_matrix_by_scalar(matrix to_multiply, const double& scalar)
 array<double, DIM> get_unit_vector(const int& d)
 {
   array<double, DIM> unit_vector;
-  for (int i=0; i<d; ++i)
+  for (int i=0; i< DIM; ++i)
   {
     if (i == d-1)
     {

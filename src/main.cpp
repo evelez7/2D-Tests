@@ -19,7 +19,7 @@
 static FILE *fp = NULL;
 static int useBinary = 0;
 static int numInColumn = 0;
-
+static int printDone = 0;
 using namespace std;
 using namespace Proto;
 
@@ -41,7 +41,32 @@ void print_array(const array<double, DIM> &to_print)
     cout << to_print[i] << " ";
   cout << "}" << endl;
 }
-
+void print_matrix(array<array<double, DIM>, DIM> a_mat,string a_str)
+{
+  if (printDone == 0)
+    {
+      cout << "matrix " << a_str << endl;
+      cout << a_mat[0][0] << " , " << a_mat[0][1] << endl;
+      cout << a_mat[1][0] << " , " << a_mat[1][1] << endl << endl;
+    }
+}
+bool check_orthogonal(matrix Q)
+{
+  auto idprod = multiply_matrices(Q,get_transpose(Q));
+  bool ret = ((fabs(idprod[0][0] - 1.) < 1.e-12) && (fabs(idprod[1][1] - 1.) < 1.e-12) && (fabs(idprod[0][1]) < 1.e-12) && (fabs(idprod[1][0]) < 1.e-12));
+  return ret;
+}
+bool check_eigenvectors(matrix& E,matrix& A, double lambda0,double lambda1)
+{
+  double eps = 1.e-12;
+  // Eigenvectors are the columns of E.
+  auto AE = multiply_matrices(A,E);
+  bool ret = fabs(AE[0][0] - lambda0*E[0][0]) < max(fabs(E[1][0]),fabs(E[0][0]))*eps;
+  ret = ret && fabs(AE[1][0] - lambda0*E[1][0]) < max(fabs(E[1][0]),fabs(E[0][0]))*eps;
+  ret = ret && fabs(AE[0][1] - lambda1*E[0][1]) < max(fabs(E[0][1]),fabs(E[1][1]))*eps;
+  ret = ret && fabs(AE[1][1] - lambda1*E[1][1]) < max(fabs(E[0][1]),fabs(E[1][1]))*eps;
+  return ret;
+}
 // initialize particles spaced by h_p
 vector<Particle> initialize_particles(const double &hp, const int &np)
 {
@@ -71,68 +96,149 @@ vector<Particle> move_particles(const vector<Particle> particles, const double &
 int main(int argc, char **argv)
 {
   int p, log_n, np, ng;
-
-  cout << "number of grid points (log_2):" << endl;
-  cin >> log_n;
-  ng = static_cast<int>(pow(2, log_n));
-
+  double time;
+  int spline_choice;
+  double r0;
+  int ppercell;
+  
+  p=8;log_n=6;time= .5*M_PI;spline_choice = 6;r0=.5;ppercell=2;
+  #if 0
   cout << "Enter p:" << endl;
   cin >> p;
-
-  double time;
-  cout << "Enter time:" << endl;
-  cin >> time;
-  time *= M_PI;
-
-  cout << endl
-       << "Spline choices are: " << endl;
+   cout << "Enter spline interpolant:" << endl;
+   cout << "Spline choices are: " << endl;
   for (int i = 1; i <= get_interpolant_size(); ++i)
   {
     cout << i << ".) " << get_interpolant_name(i) << endl;
   }
-
-  int spline_choice;
-  cout << "Enter spline interpolant:" << endl;
   cin >> spline_choice;
-  int ppercell;
+  cout << "number of grid points (log_2):" << endl;
+  cin >> log_n;
+ 
+  cout << "Enter time:" << endl;
+  cin >> time;
+  time *= M_PI;
+       
+  
   cout << "enter number of particles per cell:" << endl;
   cin >> ppercell;
-  double r0;
+  
   cout << "enter r0:" << endl;
   cin >> r0;
+#endif
+  ng = static_cast<int>(pow(2, log_n));
   np = ng * ppercell;
   Point bottom_left(-ng, -ng);
   Point top_right(ng, ng);
   Box grid_box(bottom_left, top_right);
-  BoxData<double> grid(grid_box);
-  grid.setVal(0.);
+  BoxData<double> gridded_angle(grid_box);
+  BoxData<double> gridded_eigen(grid_box);
+  BoxData<double> gridded_strength(grid_box);
+  gridded_angle.setVal(0.);
+  gridded_eigen.setVal(0.);
+  gridded_strength.setVal(0.);
 
   double hg = 1. / static_cast<double>(ng); // interparticle spacing
   double hp = hg / static_cast<double>(ppercell);
 
   vector<Particle> particles = initialize_particles(hp, np);
   vector<Particle> rotated_particles = move_particles(particles, time, p, r0);
+  
   for (int i = 0; i < rotated_particles.size(); ++i)
   {
     array<double, DIM> x_k{rotated_particles[i].x, rotated_particles[i].y};
-    interpolate(grid, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
-
-    array<array<double, DIM>, DIM> deformation_matrix = compute_deformation_matrix(particles[i], rotated_particles[i], time, p, r0);
-    auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
+    
+    array<array<double, DIM>, DIM> deformation_matrix =
+      compute_deformation_matrix(particles[i], rotated_particles[i], time, p, r0);
+    auto A_t_A =
+      multiply_matrices(get_transpose(deformation_matrix), deformation_matrix);
+    // the symmetric and positive definite matrix
     //equation 30-32
     auto eigenvalues = get_sym_eigenvalues(A_t_A);
     auto grad_det = get_determinant(A_t_A);
+    auto rq = compute_R_Q(deformation_matrix);
+    double detQ = get_determinant(rq[1]);
     double eigen_product = eigenvalues[0] * eigenvalues[1];
-
+    rotated_particles[i].angle = acos(rq[1][0][0]);
     rotated_particles[i].eigen_1 = eigenvalues[0];
     rotated_particles[i].eigen_2 = eigenvalues[1];
-    rotated_particles[i].eigen_product = eigen_product;
+    interpolate(gridded_angle, rotated_particles[i].angle*hp*hp, x_k, hg, hp, spline_choice);
+    interpolate(gridded_eigen, rotated_particles[i].eigen_1*hp*hp, x_k, hg, hp, spline_choice);
+    interpolate(gridded_strength, rotated_particles[i].strength, x_k, hg, hp, spline_choice);
   }
-  string filename = "grid";
-  cout << "Writing grid to files" << endl;
-  WriteData(grid, 0, hg, filename, filename);
+  
+  {
+    string filename = "gridded_angle";
+    cout << "Writing gridded data to files" << endl;
+    WriteData(gridded_angle, 0, hg, filename, filename);
+  }
+  {
+    string filename = "gridded_eigen";
+    WriteData(gridded_eigen, 0, hg, filename, filename);
+  }
+  {
+    string filename = "gridded_strength";
+    WriteData(gridded_strength, 0, hg, filename, filename);
+  }
   cout << "Writing particles to file" << endl;
   PWrite(rotated_particles);
+  std::ofstream ofs ("outparticles1D.txt", std::ofstream::out);
+  
+  cout << "Generate new particles corresponding to interpolated values, write to file" << endl;
+  vector<Particle> gridded_particles;
+  vector<Particle> old_gridded_particles;
+  for (auto bit = grid_box.begin(); !bit.done(); ++bit)
+    {
+      Point pos = *bit;
+      array<double,DIM> rpos;
+      rpos[0] = pos[0]*hg;
+      rpos[1] = pos[1]*hg;
+      double rmag =max(abs(rpos[0]),abs(rpos[1]));
+      double gridStrength = gridded_strength(pos);
+      Particle pt(rpos[0],rpos[1],gridStrength,0,0,0,0);
+      if (rmag < .35) gridded_particles.push_back(pt);
+    }
+  
+  old_gridded_particles = move_particles(gridded_particles,-time,p,r0);
+  for (int i = 0; i < gridded_particles.size();i++)
+    {
+      array<array<double, DIM>, DIM> deformation_matrix = compute_deformation_matrix(old_gridded_particles[i], gridded_particles[i], time, p, r0);
+      
+      auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); 
+      auto eigenvalues = get_sym_eigenvalues(A_t_A);
+      auto grad_det = get_determinant(A_t_A);
+      double eigen_product = eigenvalues[0] * eigenvalues[1];
+      auto rq = compute_R_Q(deformation_matrix);
+      double detQ = get_determinant(rq[1]);
+      auto alpha0 = old_gridded_particles[i].x;
+      auto alpha1 = old_gridded_particles[i].y;
+      array<double,DIM> alpha = {alpha0,alpha1};
+      auto amag = sqrt(pow(alpha0,2) + pow(alpha1,2));
+      array<double,DIM> ahat = {alpha0/amag,alpha1/amag};
+      array<double,DIM> aperp = {ahat[1],-ahat[0]};
+      array<array<double,DIM>,DIM> EalphaT = {ahat,aperp};
+      auto Ealpha = get_transpose(EalphaT);
+      gridded_particles[i].eigen_1 = eigenvalues[0];
+      auto R = rotation(alpha, time, p, r0);
+      auto Qinvariant =
+      multiply_matrices(Ealpha,
+                        multiply_matrices(R,multiply_matrices(rq[1],EalphaT)));
+      gridded_particles[i].eigen_2 = eigenvalues[1];
+      gridded_particles[i].angle = acos(rq[1][0][0]);
+      if (!check_orthogonal(rq[1]))
+        {
+          cout << "orthogonal matrix check fail: rq[1] =" << endl;
+          print_matrix(rq[1]);
+          abort();
+        }
+      ofs << i << " " << eigenvalues[0] << " " << eigen_product << " " << rq[1][0][0] << " "<< gridded_particles[i].strength - 1.0 << endl;
+      //ofs << grad_det << " " << gridded_particles[i].strength - 1.0 << endl;
+    }
+  string fn = "gridded_particles";
+  string ofn = "old_gridded_particles";
+  PWrite(fn.c_str(),gridded_particles,0);
+  PWrite(ofn.c_str(),old_gridded_particles,0);
+  ofs.close();
   cout << "Finished" << endl;
 
   return 0;
@@ -142,10 +248,10 @@ int main(int argc, char **argv)
 matrix compute_deformation_matrix(const Particle &particle, const Particle &rotated_particle, const double &time, const double &p, const double &r0)
 {
   matrix deformation_matrix;
-  deformation_matrix[0][0] = 0.;
+  deformation_matrix[0][0] = 1.;
   deformation_matrix[0][1] = 0.;
   deformation_matrix[1][0] = 0.;
-  deformation_matrix[1][1] = 0.;
+  deformation_matrix[1][1] = 1.;
   // fill deformation matrix
   array<double, DIM> alpha{particle.x, particle.y};
   array<double, DIM> x_k{rotated_particle.x, rotated_particle.y};
@@ -153,6 +259,7 @@ matrix compute_deformation_matrix(const Particle &particle, const Particle &rota
   {
     auto lhs = multiply_matrix_by_vector(rotation(alpha, time, p, r0), get_unit_vector(j + 1));
     auto rhs = multiply_matrix_by_vector(partial_derivative_rotation(x_k, alpha, time, p, j, r0), alpha);
+    
     if (j == 0)
     {
       deformation_matrix[0][0] = lhs[0] + rhs[0];
@@ -206,27 +313,54 @@ vector<matrix> compute_deformation_matrices(const vector<Particle> &particles, c
 // returns an array where arr[0] = R, arr[1] = Q
 array<matrix, 2> compute_R_Q(const matrix &deformation_matrix)
 {
-  auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix); // the symmetric and positive definite matrix
+  auto A_t_A = multiply_matrices(get_transpose(deformation_matrix), deformation_matrix);
+  // the symmetric and positive definite matrix
   // equation 30-32
   auto eigenvalues = get_sym_eigenvalues(A_t_A);
-  auto grad_det = get_determinant(A_t_A);
+  auto grad_det = get_determinant(A_t_A);  
   double eigen_product = eigenvalues[0] * eigenvalues[1];
-  auto E_transposed = find_eigenvectors(A_t_A, eigenvalues);              // conveniently, this is E transposed
+  if (fabs(sqrt(grad_det)-eigen_product) > 1.e-12)
+    {
+      cout << "grad_det = " << grad_det << " , eigen_product = " << eigen_product << endl;
+    }
+  auto E_transposed = find_sym_eigenvectors(A_t_A, eigenvalues);
+  // conveniently, this is E transposed
   auto E = get_transpose(E_transposed); // do not confuse eigenvectors with E
-
+  
+  auto E_inverse = get_inverse(E); 
   array<array<double, DIM>, DIM> diag;
   diag[0][0] = eigenvalues[0];
   diag[0][1] = 0;
   diag[1][1] = eigenvalues[1];
   diag[1][0] = 0;
-
-  auto R = multiply_matrices(multiply_matrices(E, diag),
-                             E_transposed); // symm matrix
+  auto chk_eigen = check_eigenvectors(E,A_t_A, pow(eigenvalues[0],2), pow(eigenvalues[1],2));
+  if (!chk_eigen)
+    {
+      cout << "not eigenvectors!"<< endl;
+      auto AE = multiply_matrices(A_t_A,E);
+      print_matrix(AE);
+      print_matrix(E);
+      abort();
+    }
+  auto R = multiply_matrices(multiply_matrices(E, diag),E_inverse); // symm matrix
   auto R_inverse = get_inverse(R);
   auto Q = multiply_matrices(deformation_matrix, R_inverse); // rotation
   array<matrix, 2> matrices;
   matrices[0] = R;
   matrices[1] = Q;
+  // check correctness
+  if (!check_orthogonal(Q))
+    {
+      cout << "Q not orthogonal, det(Q) = "<< get_determinant(Q) << endl;
+      //print_matrix(Q);
+      //print_matrix(R);
+      print_matrix(multiply_matrices(R,R));
+      print_matrix(A_t_A);
+      auto AE = multiply_matrices(A_t_A,E);
+      print_matrix(AE);
+      print_matrix(multiply_matrices(diag,E));
+      abort();
+    }
   return matrices;
 }
 
@@ -271,12 +405,12 @@ matrix partial_derivative_rotation(const array<double, DIM> &alpha, const array<
   double velocity = find_velocity(find_magnitude(original_alpha), p, r0);
   // partial derivative with respect to alpha_d
   double velocity_derivative = find_velocity_derivative(find_magnitude(original_alpha), p, r0);
-  double velocity_deriv_alpha = velocity_derivative * (original_alpha[d] / find_magnitude(alpha));
+  double velocity_deriv_alpha = velocity_derivative * (original_alpha[d] / find_magnitude(original_alpha));
   matrix rotation_matrix;
   rotation_matrix[0][0] = -sin(velocity * time) * time * velocity_deriv_alpha;
   rotation_matrix[0][1] = cos(velocity * time) * time * velocity_deriv_alpha;
   rotation_matrix[1][0] = -cos(velocity * time) * time * velocity_deriv_alpha;
   rotation_matrix[1][1] = -sin(velocity * time) * time * velocity_deriv_alpha;
-
+  
   return rotation_matrix;
 }

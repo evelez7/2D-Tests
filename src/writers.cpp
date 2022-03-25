@@ -70,7 +70,7 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
     vars[3][i] = current_part.velocity;
     vars[4][i] = current_part.eigen_1;
     vars[5][i] = current_part.eigen_2;
-    vars[6][i] = current_part.eigen_1 * current_part.eigen_2;
+    vars[6][i] = current_part.angle;
 
     x[i * 3] = current_part.x;
     x[i * 3 + 1] = current_part.y;
@@ -86,6 +86,6 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
   varPtr[5] = &vars[5][0];
   varPtr[6] = &vars[6][0];
   int vardim[7] = {1, 1, 1, 1, 1, 1, 1};
-  const char *const varnames[] = {"x_1", "x_2", "strength", "velocity", "eigen_1", "eigen_2", "eigen_product"};
-  write_point_mesh("parts", size, &(x[0]), 7, vardim, varnames, varPtr);
+  const char *const varnames[] = {"x_1", "x_2", "strength", "velocity", "eigen_1", "eigen_2", "angle"};
+  write_point_mesh(a_filename, size, &(x[0]), 7, vardim, varnames, varPtr);
 }

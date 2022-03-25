@@ -3,9 +3,9 @@ PROTO = $(HOME)/proto/include
 
 DIM = 2
 USE_BINARY = 0
-CXX = g++
+CXX = clang++
 CXXFLAGS = -std=c++11
-#CXXFLAGS += -g -O0 # debug flags
+CXXFLAGS += -g -O0 # debug flags
 CXXFLAGS += -D DIM=$(DIM)  -D VISIT_USE_BINARY=$(USE_BINARY) -I$(PROTO)
 LIBS = matrix.cpp velocities.cpp interpolate.cpp w.cpp writers.cpp
 
