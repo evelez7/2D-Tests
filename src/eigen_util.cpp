@@ -6,16 +6,36 @@ using namespace std;
 // arr[0] = a, arr[1] = b, arr[2] = c, x=-b +- sqrt(b^2 -4ac) all over 2a
 array<double, DIM> get_roots(const array<double, 3>& characteristic_polynomial)
 {
+  double eps = 1.e-7;
   double a = characteristic_polynomial[0];
   double b = characteristic_polynomial[1];
   double c = characteristic_polynomial[2];
   double discriminant = pow(b, 2.) - (4. * a * c);
+  if (discriminant < 0) discriminant = 0;
   array<double, DIM> roots;
+
+  if (b <= 0)
+    {
+      roots[1] = (2*c)/(-b + sqrt(discriminant));      
+      roots[0] = c/(a*roots[1]);
+    }
+  else
+    {
+      roots[1] = (-b - sqrt(discriminant))/(2*a);
+      roots[0] = c/(a*roots[1]);
+    }
+ 
+  //{
+    //cout << "a,b,c = "<< a-1 << " , " << b+2 <<  " , " << c-1 << endl;
+    //cout << "roots, disc = "<< roots[0] << " , " << roots[1] << " , "<< discriminant << endl;
+      //abort();
+  //}
+    /*#if 0
   if (discriminant > 0)
   {
     roots[0] = (-b + sqrt(discriminant))/(2*a);
     roots[1] = (-b - sqrt(discriminant))/(2*a);
-  } else if (discriminant == 0 || discriminant < 1e-10)
+  } else if (discriminant == 0 || discriminant < 1e-14)
   {
     roots[0] = -b/(2.*a);
     roots[1]=roots[0];
@@ -25,6 +45,7 @@ array<double, DIM> get_roots(const array<double, 3>& characteristic_polynomial)
   //   cout << "root 1: " << roots[0] << endl;
   //   cout << "root 2: " << roots[1] << endl;
   // }
+  #endif*/
   return roots;
 }
 
@@ -165,7 +186,7 @@ array<array<double, DIM>, DIM> find_sym_eigenvectors(const array<array<double, D
   // take the special case that we have a symmetric 2x2 matrix
   array<array<double, DIM>, DIM> eigenvectors;  
 
-  double eps = 1.e-14;
+  double eps = 1.e-15;
   double b = A[1][0];
   if (abs(b - A[0][1]) > eps) abort();
   double a = A[0][0] - pow(eigenvalues[0],2);
@@ -192,6 +213,9 @@ array<array<double, DIM>, DIM> find_sym_eigenvectors(const array<array<double, D
       eigenvectors[0][l1] = 0.;
     }
   // For a symmetric matrix, the eigenvectors are orthogonal.
+  double norm = sqrt(pow(eigenvectors[0][0],2) + pow(eigenvectors[0][1],2));
+  eigenvectors[0][0] /= norm;
+  eigenvectors[0][1] /= norm;
   eigenvectors[1][l0] = -eigenvectors[0][l1];
   eigenvectors[1][l1] = eigenvectors[0][l0];
   return eigenvectors;

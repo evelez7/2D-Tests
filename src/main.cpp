@@ -52,19 +52,29 @@ void print_matrix(array<array<double, DIM>, DIM> a_mat,string a_str)
 }
 bool check_orthogonal(matrix Q)
 {
+  double eps=1.e-7;
   auto idprod = multiply_matrices(Q,get_transpose(Q));
-  bool ret = ((fabs(idprod[0][0] - 1.) < 1.e-12) && (fabs(idprod[1][1] - 1.) < 1.e-12) && (fabs(idprod[0][1]) < 1.e-12) && (fabs(idprod[1][0]) < 1.e-12));
+  bool ret = ((fabs(idprod[0][0] - 1.) < eps) && (fabs(idprod[1][1] - 1.) < eps) && (fabs(idprod[0][1]) < eps) && (fabs(idprod[1][0]) < eps));
   return ret;
 }
 bool check_eigenvectors(matrix& E,matrix& A, double lambda0,double lambda1)
 {
-  double eps = 1.e-12;
+  double eps = 1.e-7;
   // Eigenvectors are the columns of E.
   auto AE = multiply_matrices(A,E);
   bool ret = fabs(AE[0][0] - lambda0*E[0][0]) < max(fabs(E[1][0]),fabs(E[0][0]))*eps;
+  //cout << "ret = " << ret << endl;
+  if (!ret)
+    {
+    cout << AE[0][0] - 1 << " , " << lambda0*E[0][0] - 1 << " ," << fabs(E[1][0]) << " , " << fabs(E[0][0]) << endl;
+    cout << "eigenvalues =" << lambda0 << " , " << lambda1 << endl;
+    }
   ret = ret && fabs(AE[1][0] - lambda0*E[1][0]) < max(fabs(E[1][0]),fabs(E[0][0]))*eps;
+  //cout << "ret = " << ret << endl;
   ret = ret && fabs(AE[0][1] - lambda1*E[0][1]) < max(fabs(E[0][1]),fabs(E[1][1]))*eps;
+  //cout << "ret = " << ret << endl;
   ret = ret && fabs(AE[1][1] - lambda1*E[1][1]) < max(fabs(E[0][1]),fabs(E[1][1]))*eps;
+  //cout << "ret = " << ret << endl;
   return ret;
 }
 // initialize particles spaced by h_p
@@ -100,7 +110,7 @@ int main(int argc, char **argv)
   int spline_choice;
   double r0;
   int ppercell;
-  
+  // p=8;log_n=6;time= .5*M_PI;spline_choice = 6;r0=.5;ppercell=2;
   cout << "Enter p:" << endl;
   cin >> p;
    cout << "Enter spline interpolant:" << endl;
@@ -194,7 +204,7 @@ int main(int argc, char **argv)
       double rmag =max(abs(rpos[0]),abs(rpos[1]));
       double gridStrength = gridded_strength(pos);
       Particle pt(rpos[0],rpos[1],gridStrength,0,0,0,0);
-      if (rmag < .35) gridded_particles.push_back(pt);
+      if (rmag < .3) gridded_particles.push_back(pt);
     }
   
   old_gridded_particles = move_particles(gridded_particles,-time,p,r0);
@@ -336,8 +346,11 @@ array<matrix, 2> compute_R_Q(const matrix &deformation_matrix)
     {
       cout << "not eigenvectors!"<< endl;
       auto AE = multiply_matrices(A_t_A,E);
+      cout << "AE = " << endl;
       print_matrix(AE);
+      cout << "E = " << endl;
       print_matrix(E);
+      cout << "eigenvalues - 1 = " <<  pow(eigenvalues[0],2) - 1 << " , " <<  pow(eigenvalues[1],2) - 1 << endl;
       abort();
     }
   auto R = multiply_matrices(multiply_matrices(E, diag),E_inverse); // symm matrix
