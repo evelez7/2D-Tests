@@ -1,6 +1,7 @@
 #include "Proto_WriteBoxData.H"
 #include "Proto_VisitWriter.H"
 #include "writers.h"
+#include <fstream>
 
 void PWrite(vector<Particle> particles)
 {
@@ -88,4 +89,25 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
   int vardim[7] = {1, 1, 1, 1, 1, 1, 1};
   const char *const varnames[] = {"x_1", "x_2", "strength", "velocity", "eigen_1", "eigen_2", "angle"};
   write_point_mesh(a_filename, size, &(x[0]), 7, vardim, varnames, varPtr);
+}
+
+void write_curve_file(const vector<double>& x, const vector<double>& y, const string& file_name)
+{
+  assert(y.size() == x.size());
+  ofstream curve_file;
+  curve_file.open(file_name.c_str(), ios::trunc);
+  curve_file << "# " << file_name << endl;
+  for (int i=0; i<x.size(); ++i)
+    curve_file << x.at(i) << " " << y.at(i) << endl;
+  curve_file.close();
+}
+
+void write_curve_file_append(const vector<double>& x, const vector<double>& y, const string& file_name)
+{
+  assert(y.size() == x.size());
+  ofstream curve_file;
+  curve_file.open(file_name.c_str(), ios::app | ios::out);
+  for (int i=0; i<x.size(); ++i)
+    curve_file << x.at(i) << " " << y.at(i) << endl;
+  curve_file.close();
 }

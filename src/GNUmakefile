@@ -12,5 +12,8 @@ LIBS = matrix.cpp velocities.cpp interpolate.cpp w.cpp writers.cpp
 tests: GNUmakefile main.cpp
 	$(CXX) main.cpp $(LIBS) $(CXXFLAGS) -o tests-$(DIM)D.exe
 
+plots: GNUmakefile test.cpp
+	$(CXX) test.cpp $(LIBS) $(CXXFLAGS) -o plots.exe
+
 clean:
-	rm -r *.exe *.vtk
+	rm -r *.exe *.vtk *.curve ./tests/min_max/*.curve ./tests/strengths/angle/*.curve ./tests/strengths/eigen/*.curve
