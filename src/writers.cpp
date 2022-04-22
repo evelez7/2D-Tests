@@ -91,12 +91,12 @@ void PWrite(const char *a_filename, const vector<Particle> particles, int fileCo
   write_point_mesh(a_filename, size, &(x[0]), 7, vardim, varnames, varPtr);
 }
 
-void write_curve_file(const vector<double>& x, const vector<double>& y, const string& file_name)
+void write_curve_file(const vector<double>& x, const vector<double>& y, const string& file_name, const string& curve_name)
 {
   assert(y.size() == x.size());
   ofstream curve_file;
   curve_file.open(file_name.c_str(), ios::trunc);
-  curve_file << "# " << file_name << endl;
+  curve_file << "# " << curve_name << endl;
   for (int i=0; i<x.size(); ++i)
     curve_file << x.at(i) << " " << y.at(i) << endl;
   curve_file.close();

@@ -47,7 +47,7 @@ int main(int argc, char** argv)
   for (int i=1; i <= get_interpolant_size(); ++i)
     for (auto ppercell : ppercell_vec)
     {
-      string param_string = to_string(ppercell) + "_" + get_interpolant_name(i) + "_r" + to_string(r0) + "_log" + to_string(log2) + ".curve";
+      string param_string = "_pc" + to_string(ppercell) + "_" + get_interpolant_name(i) + "_r" + to_string(r0) + "_log" + to_string(log2) + ".curve";
       // i will be spline choice
       // last param is time
       // ppercell, interpolant, p, log2(n), r0, time
@@ -55,17 +55,18 @@ int main(int argc, char** argv)
       test_strengths_plots(gridded_particles_strengths, param_string);
 
       // for the min max graphs, do separately
-      string minmax_filename = "./tests/min_max/min_max_pc" + param_string;
+      string max_basename = "max";
+      string minmax_filename = "./tests/max/" + max_basename + param_string;
+      string max_curvename = max_basename + param_string;
       fstream minmax_curve_file;
 
       minmax_curve_file.open(minmax_filename, ios::app | ios::out);
-      minmax_curve_file << "# " << minmax_filename << endl;
+      minmax_curve_file << "# " <<  max_curvename << endl;
       minmax_curve_file.close();
       for (double t=0.05; t<=0.5; t+=0.05)
       {
         auto gridded_particles_minmax = work(ppercell, i, p_minmax, log2, r0, t);
         test_minmax(gridded_particles_minmax, param_string, t);
-        cout << "TEST" << endl;
       }
     }
 
@@ -274,10 +275,12 @@ void test_strengths_plots(vector<Particle> gridded_particles, string param_strin
       eigen_1_axis.push_back(particle.eigen_1);
       angle_axis.push_back(particle.angle);
     }
-    string strength_eigen1_filename ="./tests/strengths/eigen/strength_eigen1_pc";
-    write_curve_file(strength_axis, eigen_1_axis, strength_eigen1_filename + param_string);
-    string strength_angle_filename ="./tests/strengths/angle/strength_angle_pc";
-    write_curve_file(strength_axis, angle_axis, strength_angle_filename + param_string);
+    string base_name_eigen = "strength_eigen1";
+    string base_name_angle = "strength_angle";
+    string strength_eigen1_filename ="./tests/strengths/eigen/" + base_name_eigen + param_string;
+    string strength_angle_filename ="./tests/strengths/angle/" + base_name_angle + param_string;
+    write_curve_file(strength_axis, eigen_1_axis, strength_eigen1_filename, base_name_eigen + param_string);
+    write_curve_file(strength_axis, angle_axis, strength_angle_filename, base_name_angle + param_string);
     cout << "Done writing strength vs y tests..." << endl;
 }
 
@@ -288,15 +291,15 @@ void test_minmax(vector<Particle> gridded_particles, string filename_params, dou
     for (auto particle : gridded_particles)
     {
       if (particle.strength - 1. > max)
-        max = particle.strength;
-      if (particle.strength - 1. < min)
-        min = particle.strength;
+        max = particle.strength - 1;
+      // if (particle.strength - 1. < min)
+      //   min = particle.strength - 1;
     }
     vector<double> x,y;
-    x = {time, time};
-    y = {min, max};
-    cout << min << " " << max << endl;
-    string filename = "./tests/min_max/min_max_pc" + filename_params;
+    x = {time};
+    y = {max};
+    string base_name = "max";
+    string filename = "./tests/max/" + base_name + filename_params;
     write_curve_file_append(x, y, filename);
 }
 
